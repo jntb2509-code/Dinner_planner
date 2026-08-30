@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { tokenMatches } from '@/lib/validate';
-import { buildCoverage, buildMatrix } from '@/core/matching';
+import { cookView } from '@/lib/cookView';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,13 +28,5 @@ export async function GET(request: Request, { params }: Params) {
     });
   }
 
-  const coverage = buildCoverage(event);
-  const matrix = buildMatrix(event.dishes, event.participants);
-  return NextResponse.json({
-    event,
-    coverage,
-    matrix: Object.fromEntries(
-      [...matrix].map(([participantId, row]) => [participantId, Object.fromEntries(row)]),
-    ),
-  });
+  return NextResponse.json(cookView(event));
 }

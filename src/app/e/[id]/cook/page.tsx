@@ -51,6 +51,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
     { dish: Dish; helps: string[]; reason: string }[] | null
   >(null);
   const [suggesting, setSuggesting] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -104,6 +105,27 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
     }
   }
 
+  async function removeParticipant(participantId: string, name: string) {
+    if (!confirm(`להסיר את ${name} מהארוחה? ההעדפות שמילא/ה יימחקו.`)) return;
+    setRemoving(participantId);
+    try {
+      const res = await fetch(
+        `/api/events/${id}/participants/${participantId}?token=${encodeURIComponent(token)}`,
+        { method: 'DELETE' },
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? 'שגיאה בהסרה');
+      setData(body);
+      // התפריט הלא-שמור נשאר כפי שהוא; רק רשימת המשתתפים השתנתה.
+      if (!dirty) setDishes(body.event.dishes);
+      setSuggestions(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בהסרה');
+    } finally {
+      setRemoving(null);
+    }
+  }
+
   function updateDish(index: number, patch: Partial<Dish>) {
     setDishes((prev) => prev.map((d, i) => (i === index ? { ...d, ...patch } : d)));
     setDirty(true);
@@ -129,6 +151,15 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
 
   const { event, coverage, matrix } = data;
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
+
+  // שמות זהים כמעט תמיד מסמנים מילוי כפול משני מכשירים, לא שני אנשים
+  // שונים במקרה — ולכן שווה להתריע במקום להשאיר את הטבח לגלות לבד.
+  const nameCounts = new Map<string, number>();
+  for (const p of event.participants) {
+    const key = p.name.trim();
+    nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+  }
+  const duplicateNames = [...nameCounts].filter(([, n]) => n > 1).map(([name]) => name);
 
   return (
     <main>
@@ -335,6 +366,13 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
 
       {/* ------------------------------ המשתתפים ------------------------------ */}
       <h2>המשתתפים</h2>
+      {duplicateNames.length > 0 && (
+        <div className="alert warn">
+          <strong>יש שמות שמופיעים יותר מפעם אחת: {duplicateNames.join(', ')}</strong>
+          כנראה מילאו פעמיים משני מכשירים. משתתף כפול נספר פעמיים בדוח הכיסוי —
+          הסר את הרשומה הישנה.
+        </div>
+      )}
       {event.participants.length === 0 && (
         <p className="muted">עוד אף אחד לא מילא. שלח את הלינק שלמעלה.</p>
       )}
@@ -345,11 +383,21 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
             <li key={p.id}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <strong>{p.name}</strong>
-                {cov && (
-                  <span className={`pill ${cov.ok ? 'ok' : 'bad'}`}>
-                    {cov.safeDishIds.length} מנות · {cov.safeMainDishIds.length} עיקריות
-                  </span>
-                )}
+                <span className="row" style={{ gap: 8 }}>
+                  {cov && (
+                    <span className={`pill ${cov.ok ? 'ok' : 'bad'}`}>
+                      {cov.safeDishIds.length} מנות · {cov.safeMainDishIds.length} עיקריות
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="ghost small"
+                    disabled={removing === p.id}
+                    onClick={() => void removeParticipant(p.id, p.name)}
+                  >
+                    {removing === p.id ? 'מסיר…' : 'הסר'}
+                  </button>
+                </span>
               </div>
               {p.diets.length > 0 && (
                 <div className="muted">{p.diets.map((d) => DIET_BY_ID.get(d)?.he ?? d).join(' · ')}</div>

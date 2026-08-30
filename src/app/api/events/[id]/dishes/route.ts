@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { ValidationError, parseDishes, tokenMatches } from '@/lib/validate';
-import { buildCoverage, buildMatrix } from '@/core/matching';
+import { cookView } from '@/lib/cookView';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,14 +27,7 @@ export async function PUT(request: Request, { params }: Params) {
     if (!updated) return NextResponse.json({ error: 'האירוע לא נמצא' }, { status: 404 });
     if (!authorized) return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
 
-    const matrix = buildMatrix(updated.dishes, updated.participants);
-    return NextResponse.json({
-      event: updated,
-      coverage: buildCoverage(updated),
-      matrix: Object.fromEntries(
-        [...matrix].map(([participantId, row]) => [participantId, Object.fromEntries(row)]),
-      ),
-    });
+    return NextResponse.json(cookView(updated));
   } catch (error) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
