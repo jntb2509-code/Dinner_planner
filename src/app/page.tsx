@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { shareBaseUrl } from '@/lib/baseUrl';
 import ShareBox from '@/components/ShareBox';
 
 export default function CreateEventPage() {
@@ -38,7 +39,7 @@ export default function CreateEventPage() {
   }
 
   if (created) {
-    const origin = typeof window === 'undefined' ? '' : window.location.origin;
+    const origin = shareBaseUrl();
     const guestLink = `${origin}/e/${created.id}`;
     const cookLink = `${origin}/e/${created.id}/cook?t=${created.cookToken}`;
     return (

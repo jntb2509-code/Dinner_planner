@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, use, useCallback, useEffect, useMemo, useState } from 'react';
+import { shareBaseUrl } from '@/lib/baseUrl';
 import { useSearchParams } from 'next/navigation';
 import TagPicker from '@/components/TagPicker';
 import { DIET_BY_ID, tagName } from '@/core/taxonomy';
@@ -150,7 +151,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
   if (!data) return <main><p className="muted">טוען…</p></main>;
 
   const { event, coverage, matrix } = data;
-  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const origin = shareBaseUrl();
 
   // שמות זהים כמעט תמיד מסמנים מילוי כפול משני מכשירים, לא שני אנשים
   // שונים במקרה — ולכן שווה להתריע במקום להשאיר את הטבח לגלות לבד.
