@@ -9,6 +9,19 @@ import type { MealEvent } from '@/core/types';
  * בענן, אם מוגדר DATABASE_URL (Vercel מזריק אותו אוטומטית כשמחברים
  * מסד נתונים), עוברים ל-Postgres. שאר המערכת לא יודעת מי מהם פעיל.
  */
+/**
+ * אין לאן לכתוב. נזרק במקום להחזיר שגיאה כללית, כדי שהמשתמש יקבל הוראה
+ * מה לעשות ולא 500 סתום.
+ */
+export class StorageNotConfiguredError extends Error {
+  constructor() {
+    super(
+      'מסד הנתונים עדיין לא מחובר. בפרויקט ב-Vercel: Storage ← Create Database ← ' +
+        'בחר Postgres ← Connect, ואז Redeploy.',
+    );
+  }
+}
+
 export interface Store {
   create(event: MealEvent): Promise<MealEvent>;
   get(id: string): Promise<MealEvent | null>;
@@ -125,9 +138,30 @@ class PostgresStore implements Store {
   }
 }
 
+/**
+ * אחסון שכל פעולה בו נכשלת בהודעה מפורשת. משמש כשרצים על פלטפורמה
+ * שמערכת הקבצים שלה לקריאה בלבד ולא הוגדר מסד נתונים — המצב שבו
+ * FileStore היה נכשל עם EROFS ומייצר 500 בלי שום רמז מה לתקן.
+ */
+class UnconfiguredStore implements Store {
+  async create(): Promise<never> {
+    throw new StorageNotConfiguredError();
+  }
+  async get(): Promise<never> {
+    throw new StorageNotConfiguredError();
+  }
+  async update(): Promise<never> {
+    throw new StorageNotConfiguredError();
+  }
+}
+
 let cached: Store | null = null;
 
 export function getStore(): Store {
-  cached ??= process.env.DATABASE_URL ? new PostgresStore() : new FileStore();
+  if (cached) return cached;
+  if (process.env.DATABASE_URL) cached = new PostgresStore();
+  // VERCEL מוגדר אוטומטית בכל בנייה והרצה בפלטפורמה.
+  else if (process.env.VERCEL) cached = new UnconfiguredStore();
+  else cached = new FileStore();
   return cached;
 }

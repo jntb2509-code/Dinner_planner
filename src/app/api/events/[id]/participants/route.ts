@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { shortId } from '@/lib/ids';
 import { ValidationError, parseParticipant } from '@/lib/validate';
+import { errorResponse } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,10 +38,6 @@ export async function POST(request: Request, { params }: Params) {
       [...updated.participants].reverse().find((p) => p.name === name);
     return NextResponse.json({ participantId: saved?.id ?? null });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('save participant failed', error);
-    return NextResponse.json({ error: 'שגיאה בשמירת ההעדפות' }, { status: 500 });
+    return errorResponse(error, 'שגיאה בשמירת ההעדפות');
   }
 }

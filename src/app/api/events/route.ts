@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookToken, shortId } from '@/lib/ids';
 import { getStore } from '@/lib/store';
 import { ValidationError } from '@/lib/validate';
+import { errorResponse } from '@/lib/apiError';
 import type { MealEvent } from '@/core/types';
 
 export const dynamic = 'force-dynamic';
@@ -33,10 +34,6 @@ export async function POST(request: Request) {
     await getStore().create(event);
     return NextResponse.json({ id: event.id, cookToken: event.cookToken });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('create event failed', error);
-    return NextResponse.json({ error: 'שגיאה ביצירת האירוע' }, { status: 500 });
+    return errorResponse(error, 'שגיאה ביצירת האירוע');
   }
 }

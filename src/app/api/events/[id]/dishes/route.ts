@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { ValidationError, parseDishes, tokenMatches } from '@/lib/validate';
+import { errorResponse } from '@/lib/apiError';
 import { cookView } from '@/lib/cookView';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +30,6 @@ export async function PUT(request: Request, { params }: Params) {
 
     return NextResponse.json(cookView(updated));
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('save dishes failed', error);
-    return NextResponse.json({ error: 'שגיאה בשמירת התפריט' }, { status: 500 });
+    return errorResponse(error, 'שגיאה בשמירת התפריט');
   }
 }

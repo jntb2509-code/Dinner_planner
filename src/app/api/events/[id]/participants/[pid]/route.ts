@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { tokenMatches } from '@/lib/validate';
 import { cookView } from '@/lib/cookView';
+import { errorResponse } from '@/lib/apiError';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,22 +20,26 @@ export async function DELETE(request: Request, { params }: Params) {
 
   let authorized = true;
   let found = true;
-  const updated = await getStore().update(id, (event) => {
-    if (!tokenMatches(event.cookToken, token)) {
-      authorized = false;
-      return event;
-    }
-    const participants = event.participants.filter((p) => p.id !== pid);
-    if (participants.length === event.participants.length) {
-      found = false;
-      return event;
-    }
-    return { ...event, participants };
-  });
+  try {
+    const updated = await getStore().update(id, (event) => {
+      if (!tokenMatches(event.cookToken, token)) {
+        authorized = false;
+        return event;
+      }
+      const participants = event.participants.filter((p) => p.id !== pid);
+      if (participants.length === event.participants.length) {
+        found = false;
+        return event;
+      }
+      return { ...event, participants };
+    });
 
-  if (!updated) return NextResponse.json({ error: 'האירוע לא נמצא' }, { status: 404 });
-  if (!authorized) return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
-  if (!found) return NextResponse.json({ error: 'המשתתף לא נמצא' }, { status: 404 });
+    if (!updated) return NextResponse.json({ error: 'האירוע לא נמצא' }, { status: 404 });
+    if (!authorized) return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
+    if (!found) return NextResponse.json({ error: 'המשתתף לא נמצא' }, { status: 404 });
 
-  return NextResponse.json(cookView(updated));
+    return NextResponse.json(cookView(updated));
+  } catch (error) {
+    return errorResponse(error, 'שגיאה בהסרת המשתתף');
+  }
 }
