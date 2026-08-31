@@ -1,5 +1,6 @@
 import { DIET_BY_ID, TAG_BY_ID } from '@/core/taxonomy';
-import type { Dish, Participant, TagId } from '@/core/types';
+import type { Dish, TagId } from '@/core/types';
+import type { Person } from './model';
 
 /**
  * הקלט מגיע מדפדפן של בן משפחה, אבל הלינק ציבורי — אז מנקים אותו
@@ -43,7 +44,7 @@ function dietList(value: unknown): string[] {
   return [...seen];
 }
 
-export function parseParticipant(body: unknown, id: string): Participant {
+export function parsePerson(body: unknown, id: string): Person {
   if (!body || typeof body !== 'object') throw new ValidationError('גוף הבקשה אינו תקין');
   const raw = body as Record<string, unknown>;
   return {
@@ -56,6 +57,17 @@ export function parseParticipant(body: unknown, id: string): Participant {
     notes: text(raw.notes, MAX_NOTES, 'הערות', false) || undefined,
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** רשימת מזהי מוזמנים, מסוננת מול האנשים שקיימים בפועל במשק הבית. */
+export function parseAttendeeIds(body: unknown, known: Set<string>): string[] {
+  const raw = (body as Record<string, unknown> | null)?.attendeeIds;
+  if (!Array.isArray(raw)) throw new ValidationError('רשימת המוזמנים חסרה');
+  const out = new Set<string>();
+  for (const item of raw.slice(0, 200)) {
+    if (typeof item === 'string' && known.has(item)) out.add(item);
+  }
+  return [...out];
 }
 
 export function parseDishes(body: unknown): Dish[] {

@@ -1,18 +1,20 @@
 'use client';
 
 import { Suspense, use, useCallback, useEffect, useMemo, useState } from 'react';
-import { shareBaseUrl } from '@/lib/baseUrl';
 import { useSearchParams } from 'next/navigation';
 import TagPicker from '@/components/TagPicker';
 import { DIET_BY_ID, tagName } from '@/core/taxonomy';
 import { DISH_LIBRARY } from '@/core/library';
 import type { CoverageReport, Dish, DishVerdict, MealEvent } from '@/core/types';
-import ShareBox from '@/components/ShareBox';
 
 interface CookData {
   event: MealEvent;
   coverage: CoverageReport;
   matrix: Record<string, Record<string, DishVerdict>>;
+  household: { id: string; name: string };
+  /** כל אנשי הקבוצה — כדי שאפשר יהיה להוסיף מוזמן ששכחו. */
+  roster: { id: string; name: string }[];
+  attendeeIds: string[];
 }
 
 const STATUS_ICON: Record<DishVerdict['status'], string> = {
@@ -106,22 +108,29 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
     }
   }
 
-  async function removeParticipant(participantId: string, name: string) {
-    if (!confirm(`להסיר את ${name} מהארוחה? ההעדפות שמילא/ה יימחקו.`)) return;
-    setRemoving(participantId);
+  /**
+   * שינוי מי מגיע לארוחה הזו. שים לב שזו אינה הסרה מהקבוצה — ההעדפות
+   * של האדם נשארות שמורות ותקפות לכל ארוחה אחרת.
+   */
+  async function setAttendance(personId: string, attending: boolean) {
+    setRemoving(personId);
     try {
-      const res = await fetch(
-        `/api/events/${id}/participants/${participantId}?token=${encodeURIComponent(token)}`,
-        { method: 'DELETE' },
-      );
+      const next = attending
+        ? [...new Set([...(data?.attendeeIds ?? []), personId])]
+        : (data?.attendeeIds ?? []).filter((x) => x !== personId);
+      const res = await fetch(`/api/events/${id}/attendees?token=${encodeURIComponent(token)}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ attendeeIds: next }),
+      });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? 'שגיאה בהסרה');
+      if (!res.ok) throw new Error(body.error ?? 'שגיאה בעדכון');
       setData(body);
-      // התפריט הלא-שמור נשאר כפי שהוא; רק רשימת המשתתפים השתנתה.
+      // התפריט הלא-שמור נשאר כפי שהוא; רק רשימת המוזמנים השתנתה.
       if (!dirty) setDishes(body.event.dishes);
       setSuggestions(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה בהסרה');
+      setError(err instanceof Error ? err.message : 'שגיאה בעדכון המוזמנים');
     } finally {
       setRemoving(null);
     }
@@ -151,23 +160,16 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
   if (!data) return <main><p className="muted">טוען…</p></main>;
 
   const { event, coverage, matrix } = data;
-  const origin = shareBaseUrl();
+  const attendingIds = new Set(data.attendeeIds);
+  const absentees = data.roster.filter((p) => !attendingIds.has(p.id));
 
-  // שמות זהים כמעט תמיד מסמנים מילוי כפול משני מכשירים, לא שני אנשים
-  // שונים במקרה — ולכן שווה להתריע במקום להשאיר את הטבח לגלות לבד.
-  const nameCounts = new Map<string, number>();
-  for (const p of event.participants) {
-    const key = p.name.trim();
-    nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
-  }
-  const duplicateNames = [...nameCounts].filter(([, n]) => n > 1).map(([name]) => name);
 
   return (
     <main>
       <h1>{event.title}</h1>
       <p className="muted">
-        {event.participants.length} משתתפים מילאו · דורש {event.minDishesPerPerson} מנות לכל אחד,
-        מתוכן {event.minMainsPerPerson} עיקריות
+        {data.household.name} · {event.participants.length} מגיעים · דורש{' '}
+        {event.minDishesPerPerson} מנות לכל אחד, מתוכן {event.minMainsPerPerson} עיקריות
       </p>
 
       {error && <div className="alert bad">{error}</div>}
@@ -197,11 +199,27 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
       )}
 
       {/* ------------------------------ שיתוף ------------------------------ */}
-      <div className="card">
-        <h3>הלינק למשפחה</h3>
-        <p className="muted">מי שעוד לא מילא — שלח לו את זה שוב.</p>
-        <ShareBox url={`${origin}/e/${event.id}`} />
-      </div>
+      {absentees.length > 0 && (
+        <div className="card">
+          <h3>שכחת מישהו?</h3>
+          <p className="muted">
+            אלה אנשים מ&quot;{data.household.name}&quot; שלא סימנת כמגיעים לארוחה הזו.
+          </p>
+          <div className="tags">
+            {absentees.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="tag"
+                disabled={removing === p.id}
+                onClick={() => void setAttendance(p.id, true)}
+              >
+                + {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ------------------------------ התפריט ------------------------------ */}
       <h2>התפריט</h2>
@@ -366,16 +384,9 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
       )}
 
       {/* ------------------------------ המשתתפים ------------------------------ */}
-      <h2>המשתתפים</h2>
-      {duplicateNames.length > 0 && (
-        <div className="alert warn">
-          <strong>יש שמות שמופיעים יותר מפעם אחת: {duplicateNames.join(', ')}</strong>
-          כנראה מילאו פעמיים משני מכשירים. משתתף כפול נספר פעמיים בדוח הכיסוי —
-          הסר את הרשומה הישנה.
-        </div>
-      )}
+      <h2>מי מגיע</h2>
       {event.participants.length === 0 && (
-        <p className="muted">עוד אף אחד לא מילא. שלח את הלינק שלמעלה.</p>
+        <p className="muted">לא סימנת אף אחד כמגיע. הוסף מהרשימה שלמעלה.</p>
       )}
       <ul className="list">
         {event.participants.map((p) => {
@@ -394,9 +405,10 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
                     type="button"
                     className="ghost small"
                     disabled={removing === p.id}
-                    onClick={() => void removeParticipant(p.id, p.name)}
+                    onClick={() => void setAttendance(p.id, false)}
+                    title="מסיר מהארוחה הזו בלבד. ההעדפות נשארות בקבוצה."
                   >
-                    {removing === p.id ? 'מסיר…' : 'הסר'}
+                    {removing === p.id ? 'מעדכן…' : 'לא מגיע'}
                   </button>
                 </span>
               </div>

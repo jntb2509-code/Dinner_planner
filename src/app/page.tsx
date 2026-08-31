@@ -1,38 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { shareBaseUrl } from '@/lib/baseUrl';
 import ShareBox from '@/components/ShareBox';
+import { shareBaseUrl } from '@/lib/baseUrl';
 
-export default function CreateEventPage() {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [minDishes, setMinDishes] = useState(2);
-  const [minMains, setMinMains] = useState(1);
+export default function CreateHouseholdPage() {
+  const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [created, setCreated] = useState<{ id: string; cookToken: string } | null>(null);
+  const [created, setCreated] = useState<{ id: string; ownerToken: string } | null>(null);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError('');
     try {
-      const res = await fetch('/api/events', {
+      const res = await fetch('/api/households', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          date: date || undefined,
-          minDishesPerPerson: minDishes,
-          minMainsPerPerson: minMains,
-        }),
+        body: JSON.stringify({ name }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'שגיאה');
       setCreated(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'שגיאה ביצירת האירוע');
+      setError(err instanceof Error ? err.message : 'שגיאה ביצירת הקבוצה');
     } finally {
       setBusy(false);
     }
@@ -40,32 +32,35 @@ export default function CreateEventPage() {
 
   if (created) {
     const origin = shareBaseUrl();
-    const guestLink = `${origin}/e/${created.id}`;
-    const cookLink = `${origin}/e/${created.id}/cook?t=${created.cookToken}`;
+    const joinLink = `${origin}/h/${created.id}`;
+    const manageLink = `${origin}/h/${created.id}/manage?t=${created.ownerToken}`;
     return (
       <main>
-        <h1>הארוחה נוצרה 🎉</h1>
+        <h1>הקבוצה נוצרה 🎉</h1>
         <div className="alert good">
           <strong>שמור את שני הלינקים האלה עכשיו.</strong>
-          אין הרשמה ואין סיסמה — הלינקים הם הדרך היחידה לחזור לארוחה הזו.
+          אין הרשמה ואין סיסמה — הלינקים הם הדרך היחידה לחזור לקבוצה הזו.
         </div>
 
         <div className="card">
           <h3>1. הלינק למשפחה</h3>
-          <p className="muted">שלח אותו בקבוצת הוואטסאפ. כל אחד ממלא את ההעדפות שלו.</p>
-          <ShareBox url={guestLink} />
+          <p className="muted">
+            שלח אותו פעם אחת בקבוצת הוואטסאפ. כל אחד ממלא את ההעדפות שלו — <strong>פעם
+            אחת בחיים</strong>, לא בכל ארוחה מחדש.
+          </p>
+          <ShareBox url={joinLink} />
         </div>
 
         <div className="card">
-          <h3>2. הלינק שלך, הטבח</h3>
+          <h3>2. הלינק שלך</h3>
           <p className="muted">
-            כאן אתה רואה את כל ההעדפות ומתכנן את התפריט. <strong>אל תשתף אותו</strong> — הוא
+            כאן אתה פותח ארוחות ורואה את כל ההעדפות. <strong>אל תשתף אותו</strong> — הוא
             מכיל מידע אישי של כולם.
           </p>
-          <ShareBox url={cookLink} />
+          <ShareBox url={manageLink} />
           <p style={{ marginTop: 12 }}>
-            <a href={cookLink}>
-              <button type="button" className="primary">פתח את לוח הבקרה →</button>
+            <a href={manageLink}>
+              <button type="button" className="primary">פתח את הקבוצה →</button>
             </a>
           </p>
         </div>
@@ -77,63 +72,29 @@ export default function CreateEventPage() {
     <main>
       <h1>מתכנן הארוחות המשפחתי</h1>
       <p className="muted" style={{ marginBottom: 22 }}>
-        פותחים ארוחה, שולחים לינק למשפחה, וכל אחד ממלא מה הוא אוכל ומה לא. אתה מקבל תמונה אחת
-        ברורה של מה אפשר לבשל — ומי עלול להישאר בלי כלום.
+        כל אחד ממלא פעם אחת מה הוא אוכל ומה לא. מכאן והלאה, כשאתה פותח ארוחה אתה רק מסמן
+        מי מגיע — ומיד רואה מה אפשר לבשל ומי עלול להישאר בלי כלום.
       </p>
 
       <form onSubmit={create} className="card">
-        <div style={{ marginBottom: 14 }}>
-          <label htmlFor="title">שם הארוחה</label>
-          <input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="למשל: ליל הסדר אצל סבתא"
-            required
-          />
-        </div>
-
-        <div style={{ marginBottom: 14 }}>
-          <label htmlFor="date">תאריך (לא חובה)</label>
-          <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-
-        <h3 style={{ marginTop: 22 }}>מה נחשב "יש לו מה לאכול"?</h3>
+        <label htmlFor="name">איך נקרא לקבוצה?</label>
         <p className="muted">
-          זה הסף שהמערכת תתריע כשמישהו לא עומד בו. ברירת המחדל מתאימה לרוב הארוחות.
+          זו הקבוצה הקבועה שממנה ייבנו כל הארוחות. אפשר לפתוח כמה קבוצות נפרדות — למשל
+          אחת למשפחה ואחת למחותנים.
         </p>
-        <div className="grid2">
-          <div>
-            <label htmlFor="minDishes">מנות אפשריות לכל אחד, לפחות</label>
-            <input
-              id="minDishes"
-              type="number"
-              min={1}
-              max={10}
-              value={minDishes}
-              onChange={(e) => setMinDishes(Number(e.target.value))}
-              style={{ width: '100%', padding: '10px 12px', fontSize: 16 }}
-            />
-          </div>
-          <div>
-            <label htmlFor="minMains">מתוכן, מנות עיקריות לפחות</label>
-            <input
-              id="minMains"
-              type="number"
-              min={0}
-              max={5}
-              value={minMains}
-              onChange={(e) => setMinMains(Number(e.target.value))}
-              style={{ width: '100%', padding: '10px 12px', fontSize: 16 }}
-            />
-          </div>
-        </div>
+        <input
+          id="name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="למשל: משפחת כהן"
+          required
+        />
 
         {error && <div className="alert bad" style={{ marginTop: 14 }}>{error}</div>}
 
         <button type="submit" className="primary" disabled={busy} style={{ marginTop: 18 }}>
-          {busy ? 'יוצר…' : 'צור ארוחה'}
+          {busy ? 'יוצר…' : 'צור קבוצה'}
         </button>
       </form>
     </main>

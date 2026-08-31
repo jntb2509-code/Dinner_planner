@@ -2,19 +2,17 @@
 
 import { use, useEffect, useMemo, useState } from 'react';
 import TagPicker from '@/components/TagPicker';
-import { DIETS } from '@/core/taxonomy';
-import { expandDown } from '@/core/taxonomy';
+import { DIETS, expandDown } from '@/core/taxonomy';
 
-interface EventView {
+interface HouseholdView {
   id: string;
-  title: string;
-  date?: string;
-  filledBy: { id: string; name: string }[];
+  name: string;
+  members: { id: string; name: string }[];
 }
 
-/** מפתח ב-localStorage: מזהה המשתתף באירוע הזה, כדי לאפשר עריכה חוזרת. */
-const idKey = (eventId: string) => `dp:participant:${eventId}`;
-/** ההעדפות האחרונות שמילא — משמשות למילוי מראש באירוע הבא. */
+/** מפתח ב-localStorage: מי אני בקבוצה הזו, כדי לאפשר עריכה חוזרת. */
+const idKey = (householdId: string) => `dp:person:${householdId}`;
+/** ההעדפות האחרונות שמילא — ממלאות מראש הצטרפות לקבוצה נוספת. */
 const PROFILE_KEY = 'dp:profile';
 
 interface Profile {
@@ -28,31 +26,31 @@ interface Profile {
 
 const EMPTY: Profile = { name: '', diets: [], blocked: [], disliked: [], loved: [], notes: '' };
 
-export default function ParticipantPage({ params }: { params: Promise<{ id: string }> }) {
+export default function JoinHouseholdPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const [event, setEvent] = useState<EventView | null>(null);
+  const [household, setHousehold] = useState<HouseholdView | null>(null);
   const [loadError, setLoadError] = useState('');
   const [form, setForm] = useState<Profile>(EMPTY);
-  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [personId, setPersonId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [restored, setRestored] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/events/${id}`)
+    fetch(`/api/households/${id}`)
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? 'האירוע לא נמצא');
-        setEvent(data);
+        if (!res.ok) throw new Error(data.error ?? 'הקבוצה לא נמצאה');
+        setHousehold(data);
       })
       .catch((err: Error) => setLoadError(err.message));
   }, [id]);
 
   useEffect(() => {
     try {
-      setParticipantId(localStorage.getItem(idKey(id)));
+      setPersonId(localStorage.getItem(idKey(id)));
       const stored = localStorage.getItem(PROFILE_KEY);
       if (stored) {
         setForm({ ...EMPTY, ...(JSON.parse(stored) as Partial<Profile>) });
@@ -63,7 +61,6 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
     }
   }, [id]);
 
-  // חסימה גוברת על השאר, אז אי אפשר לסמן את אותו מרכיב גם כ"לא אוהב".
   const blockedClosure = useMemo(() => expandDown(form.blocked), [form.blocked]);
   const dislikedClosure = useMemo(() => expandDown(form.disliked), [form.disliked]);
 
@@ -77,17 +74,17 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
     setBusy(true);
     setError('');
     try {
-      const res = await fetch(`/api/events/${id}/participants`, {
+      const res = await fetch(`/api/households/${id}/people`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...form, participantId }),
+        body: JSON.stringify({ ...form, personId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'שגיאה בשמירה');
-      if (data.participantId) {
-        setParticipantId(data.participantId);
+      if (data.personId) {
+        setPersonId(data.personId);
         try {
-          localStorage.setItem(idKey(id), data.participantId);
+          localStorage.setItem(idKey(id), data.personId);
           localStorage.setItem(PROFILE_KEY, JSON.stringify(form));
         } catch {
           // אין localStorage — נשמר בשרת בכל מקרה, רק בלי עריכה חוזרת נוחה.
@@ -110,29 +107,29 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
       </main>
     );
   }
-  if (!event) return <main><p className="muted">טוען…</p></main>;
+  if (!household) return <main><p className="muted">טוען…</p></main>;
 
   return (
     <main>
-      <h1>{event.title}</h1>
-      {event.date && <p className="muted">{new Date(event.date).toLocaleDateString('he-IL')}</p>}
+      <h1>{household.name}</h1>
 
       {saved && (
         <div className="alert good">
           <strong>נשמר, תודה!</strong>
-          אפשר לסגור. אם תיזכר במשהו — חזור ללינק הזה מאותו מכשיר ועדכן.
+          מכאן והלאה אתה מסודר — לא תצטרך למלא את זה שוב לפני כל ארוחה. אם משהו ישתנה,
+          חזור ללינק הזה מאותו מכשיר ועדכן.
         </div>
       )}
 
-      {restored && !participantId && !saved && (
+      {restored && !personId && !saved && (
         <div className="alert warn">
-          מילאנו מראש לפי מה שמילאת בפעם הקודמת. עבור על זה ותקן אם משהו השתנה.
+          מילאנו מראש לפי מה שמילאת בקבוצה אחרת. עבור על זה ותקן אם משהו השתנה.
         </div>
       )}
 
       <p className="muted">
-        מלא מה אתה <strong>לא יכול</strong> לאכול, מה אתה לא אוהב, ומה אתה אוהב במיוחד. לוקח דקה,
-        וזה מה שיאפשר לטבח לתכנן משהו שגם לך יהיה מה לאכול בו.
+        מלא מה אתה <strong>לא יכול</strong> לאכול, מה אתה לא אוהב, ומה אתה אוהב במיוחד.
+        לוקח דקה, <strong>ועושים את זה פעם אחת</strong> — לא לפני כל ארוחה.
       </p>
 
       <form onSubmit={submit}>
@@ -163,9 +160,7 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
                   title={diet.note}
                   onClick={() =>
                     patch({
-                      diets: on
-                        ? form.diets.filter((d) => d !== diet.id)
-                        : [...form.diets, diet.id],
+                      diets: on ? form.diets.filter((d) => d !== diet.id) : [...form.diets, diet.id],
                     })
                   }
                 >
@@ -187,7 +182,6 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
             onChange={(blocked) =>
               patch({
                 blocked,
-                // מרכיב שנחסם לא יכול להישאר גם ברשימות הרכות.
                 disliked: form.disliked.filter((t) => !expandDown(blocked).has(t)),
                 loved: form.loved.filter((t) => !expandDown(blocked).has(t)),
               })
@@ -201,7 +195,9 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
         <details className="card">
           <summary>
             <strong>😕 פשוט לא אוהב</strong>
-            {form.disliked.length > 0 && <span className="pill" style={{ marginInlineStart: 8 }}>{form.disliked.length}</span>}
+            {form.disliked.length > 0 && (
+              <span className="pill" style={{ marginInlineStart: 8 }}>{form.disliked.length}</span>
+            )}
           </summary>
           <p className="muted">אפשר לשים בשולחן, רק שלא תהיה זו המנה היחידה שלך.</p>
           <TagPicker
@@ -217,7 +213,9 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
         <details className="card">
           <summary>
             <strong>😍 אוהב במיוחד</strong>
-            {form.loved.length > 0 && <span className="pill" style={{ marginInlineStart: 8 }}>{form.loved.length}</span>}
+            {form.loved.length > 0 && (
+              <span className="pill" style={{ marginInlineStart: 8 }}>{form.loved.length}</span>
+            )}
           </summary>
           <p className="muted">לא חובה, אבל עוזר לבחור בין שתי אפשרויות שקולות.</p>
           <TagPicker
@@ -229,9 +227,9 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
         </details>
 
         <div className="card">
-          <label htmlFor="notes">משהו נוסף שכדאי שהטבח יידע?</label>
+          <label htmlFor="notes">משהו נוסף שכדאי שהמבשל יידע?</label>
           <p className="muted">
-            טקסט חופשי. זה מוצג לטבח כפי שהוא, אבל לא נכנס לחישוב — מה שחשוב באמת, סמן למעלה.
+            טקסט חופשי. זה מוצג למבשל כפי שהוא, אבל לא נכנס לחישוב — מה שחשוב באמת, סמן למעלה.
           </p>
           <textarea
             id="notes"
@@ -244,14 +242,14 @@ export default function ParticipantPage({ params }: { params: Promise<{ id: stri
         {error && <div className="alert bad">{error}</div>}
 
         <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'שומר…' : participantId ? 'עדכן את ההעדפות שלי' : 'שלח לטבח'}
+          {busy ? 'שומר…' : personId ? 'עדכן את ההעדפות שלי' : 'הצטרף לקבוצה'}
         </button>
       </form>
 
-      {event.filledBy.length > 0 && (
+      {household.members.length > 0 && (
         <>
-          <h2>כבר מילאו ({event.filledBy.length})</h2>
-          <p className="muted">{event.filledBy.map((p) => p.name).join(' · ')}</p>
+          <h2>כבר בקבוצה ({household.members.length})</h2>
+          <p className="muted">{household.members.map((p) => p.name).join(' · ')}</p>
         </>
       )}
     </main>

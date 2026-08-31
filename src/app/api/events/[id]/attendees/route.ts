@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
 import { loadEvent } from '@/lib/loadEvent';
-import { parseDishes, tokenMatches } from '@/lib/validate';
+import { parseAttendeeIds, tokenMatches } from '@/lib/validate';
 import { errorResponse } from '@/lib/apiError';
 import { cookView } from '@/lib/cookView';
 import { resolveEvent } from '@/lib/model';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: Promise<{ id: string }> };
 
-/** עדכון התפריט. פעולה של הטבח בלבד. */
+/** שינוי מי מגיע לארוחה. פעולה של הטבח בלבד. */
 export async function PUT(request: Request, { params }: Params) {
   const { id } = await params;
   try {
@@ -21,8 +21,10 @@ export async function PUT(request: Request, { params }: Params) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
 
-    const dishes = parseDishes(await request.json());
-    const updated = await getStore().events.update(id, (event) => ({ ...event, dishes }));
+    const known = new Set(loaded.household.people.map((p) => p.id));
+    const attendeeIds = parseAttendeeIds(await request.json(), known);
+
+    const updated = await getStore().events.update(id, (event) => ({ ...event, attendeeIds }));
     if (!updated) return NextResponse.json({ error: 'הארוחה לא נמצאה' }, { status: 404 });
 
     return NextResponse.json({
@@ -32,6 +34,6 @@ export async function PUT(request: Request, { params }: Params) {
       attendeeIds: updated.attendeeIds,
     });
   } catch (error) {
-    return errorResponse(error, 'שגיאה בשמירת התפריט');
+    return errorResponse(error, 'שגיאה בעדכון המוזמנים');
   }
 }

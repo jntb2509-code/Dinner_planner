@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { MealEvent } from '@/core/types';
+import type { Household, StoredEvent } from './model';
 
 /**
  * שכבת אחסון מופשטת.
@@ -9,6 +9,7 @@ import type { MealEvent } from '@/core/types';
  * בענן, אם מוגדר DATABASE_URL (Vercel מזריק אותו אוטומטית כשמחברים
  * מסד נתונים), עוברים ל-Postgres. שאר המערכת לא יודעת מי מהם פעיל.
  */
+
 /**
  * אין לאן לכתוב. נזרק במקום להחזיר שגיאה כללית, כדי שהמשתמש יקבל הוראה
  * מה לעשות ולא 500 סתום.
@@ -22,62 +23,72 @@ export class StorageNotConfiguredError extends Error {
   }
 }
 
-export interface Store {
-  create(event: MealEvent): Promise<MealEvent>;
-  get(id: string): Promise<MealEvent | null>;
+/** אוסף של ישויות מאותו סוג, לפי מזהה. */
+export interface Collection<T> {
+  create(id: string, value: T): Promise<T>;
+  get(id: string): Promise<T | null>;
   /**
    * עדכון אטומי. חובה שיהיה אטומי: בני משפחה ממלאים את הטופס בו-זמנית
    * מהוואטסאפ, וקריאה-שינוי-כתיבה רגילה הייתה מאבדת תשובות.
    */
-  update(id: string, mutate: (event: MealEvent) => MealEvent): Promise<MealEvent | null>;
+  update(id: string, mutate: (value: T) => T): Promise<T | null>;
+}
+
+export interface Store {
+  households: Collection<Household>;
+  events: Collection<StoredEvent>;
 }
 
 // ---------------------------------------------------------------- קובץ מקומי
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'events.json');
 
-class FileStore implements Store {
-  /** תור סדרתי — מבטיח שעדכונים לא ידרסו זה את זה בתוך אותו תהליך. */
-  private queue: Promise<unknown> = Promise.resolve();
+/** תור סדרתי אחד לכל התהליך — מונע משתי כתיבות לדרוס זו את זו. */
+let fileQueue: Promise<unknown> = Promise.resolve();
 
-  private serialize<T>(work: () => Promise<T>): Promise<T> {
-    const next = this.queue.then(work, work);
-    this.queue = next.catch(() => undefined);
-    return next;
+function serialize<T>(work: () => Promise<T>): Promise<T> {
+  const next = fileQueue.then(work, work);
+  fileQueue = next.catch(() => undefined);
+  return next;
+}
+
+class FileCollection<T> implements Collection<T> {
+  constructor(private readonly file: string) {}
+
+  private get path(): string {
+    return path.join(DATA_DIR, this.file);
   }
 
-  private async readAll(): Promise<Record<string, MealEvent>> {
+  private async readAll(): Promise<Record<string, T>> {
     try {
-      return JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
+      return JSON.parse(await fs.readFile(this.path, 'utf8'));
     } catch {
       return {};
     }
   }
 
-  private async writeAll(all: Record<string, MealEvent>): Promise<void> {
+  private async writeAll(all: Record<string, T>): Promise<void> {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    const tmp = `${DATA_FILE}.${process.pid}.tmp`;
+    const tmp = `${this.path}.${process.pid}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(all, null, 2), 'utf8');
-    await fs.rename(tmp, DATA_FILE);
+    await fs.rename(tmp, this.path);
   }
 
-  create(event: MealEvent): Promise<MealEvent> {
-    return this.serialize(async () => {
+  create(id: string, value: T): Promise<T> {
+    return serialize(async () => {
       const all = await this.readAll();
-      all[event.id] = event;
+      all[id] = value;
       await this.writeAll(all);
-      return event;
+      return value;
     });
   }
 
-  async get(id: string): Promise<MealEvent | null> {
-    const all = await this.readAll();
-    return all[id] ?? null;
+  async get(id: string): Promise<T | null> {
+    return (await this.readAll())[id] ?? null;
   }
 
-  update(id: string, mutate: (event: MealEvent) => MealEvent): Promise<MealEvent | null> {
-    return this.serialize(async () => {
+  update(id: string, mutate: (value: T) => T): Promise<T | null> {
+    return serialize(async () => {
       const all = await this.readAll();
       const existing = all[id];
       if (!existing) return null;
@@ -91,59 +102,71 @@ class FileStore implements Store {
 
 // ------------------------------------------------------------------ Postgres
 
-class PostgresStore implements Store {
-  private ready: Promise<import('postgres').Sql> | null = null;
+type Sql = import('postgres').Sql;
 
-  private connect(): Promise<import('postgres').Sql> {
-    this.ready ??= (async () => {
-      const { default: postgres } = await import('postgres');
-      const sql = postgres(process.env.DATABASE_URL!, { ssl: 'require' });
-      await sql`
-        CREATE TABLE IF NOT EXISTS events (
-          id TEXT PRIMARY KEY,
-          data JSONB NOT NULL,
-          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        )
-      `;
-      return sql;
-    })();
-    return this.ready;
+let sqlReady: Promise<Sql> | null = null;
+
+function connect(): Promise<Sql> {
+  sqlReady ??= (async () => {
+    const { default: postgres } = await import('postgres');
+    const sql = postgres(process.env.DATABASE_URL!, { ssl: 'require' });
+    await sql`
+      CREATE TABLE IF NOT EXISTS households (
+        id TEXT PRIMARY KEY,
+        data JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS events (
+        id TEXT PRIMARY KEY,
+        data JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+    return sql;
+  })();
+  return sqlReady;
+}
+
+class PostgresCollection<T> implements Collection<T> {
+  constructor(private readonly table: 'households' | 'events') {}
+
+  async create(id: string, value: T): Promise<T> {
+    const sql = await connect();
+    const rows = sql(this.table);
+    await sql`INSERT INTO ${rows} (id, data) VALUES (${id}, ${sql.json(value as never)})`;
+    return value;
   }
 
-  async create(event: MealEvent): Promise<MealEvent> {
-    const sql = await this.connect();
-    await sql`INSERT INTO events (id, data) VALUES (${event.id}, ${sql.json(event as never)})`;
-    return event;
+  async get(id: string): Promise<T | null> {
+    const sql = await connect();
+    const rows = sql(this.table);
+    const found = await sql<{ data: T }[]>`SELECT data FROM ${rows} WHERE id = ${id}`;
+    return found[0]?.data ?? null;
   }
 
-  async get(id: string): Promise<MealEvent | null> {
-    const sql = await this.connect();
-    const rows = await sql<{ data: MealEvent }[]>`SELECT data FROM events WHERE id = ${id}`;
-    return rows[0]?.data ?? null;
-  }
-
-  async update(id: string, mutate: (event: MealEvent) => MealEvent): Promise<MealEvent | null> {
-    const sql = await this.connect();
+  async update(id: string, mutate: (value: T) => T): Promise<T | null> {
+    const sql = await connect();
+    const table = this.table;
     return sql.begin(async (tx) => {
+      const rows = tx(table);
       // FOR UPDATE נועל את השורה עד סוף הטרנזקציה, כך ששתי הגשות
-      // בו-זמנית של אותו אירוע מסתדרות בתור במקום לדרוס זו את זו.
-      const rows = await tx<{ data: MealEvent }[]>`
-        SELECT data FROM events WHERE id = ${id} FOR UPDATE
+      // בו-זמנית מסתדרות בתור במקום לדרוס זו את זו.
+      const found = await tx<{ data: T }[]>`
+        SELECT data FROM ${rows} WHERE id = ${id} FOR UPDATE
       `;
-      if (!rows[0]) return null;
-      const updated = mutate(rows[0].data);
-      await tx`UPDATE events SET data = ${tx.json(updated as never)} WHERE id = ${id}`;
+      if (!found[0]) return null;
+      const updated = mutate(found[0].data);
+      await tx`UPDATE ${rows} SET data = ${tx.json(updated as never)} WHERE id = ${id}`;
       return updated;
-    }) as Promise<MealEvent | null>;
+    }) as Promise<T | null>;
   }
 }
 
-/**
- * אחסון שכל פעולה בו נכשלת בהודעה מפורשת. משמש כשרצים על פלטפורמה
- * שמערכת הקבצים שלה לקריאה בלבד ולא הוגדר מסד נתונים — המצב שבו
- * FileStore היה נכשל עם EROFS ומייצר 500 בלי שום רמז מה לתקן.
- */
-class UnconfiguredStore implements Store {
+// ------------------------------------------------------- אחסון לא מוגדר
+
+class UnconfiguredCollection<T> implements Collection<T> {
   async create(): Promise<never> {
     throw new StorageNotConfiguredError();
   }
@@ -153,15 +176,33 @@ class UnconfiguredStore implements Store {
   async update(): Promise<never> {
     throw new StorageNotConfiguredError();
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private readonly _phantom?: T;
 }
 
 let cached: Store | null = null;
 
 export function getStore(): Store {
   if (cached) return cached;
-  if (process.env.DATABASE_URL) cached = new PostgresStore();
-  // VERCEL מוגדר אוטומטית בכל בנייה והרצה בפלטפורמה.
-  else if (process.env.VERCEL) cached = new UnconfiguredStore();
-  else cached = new FileStore();
+
+  if (process.env.DATABASE_URL) {
+    cached = {
+      households: new PostgresCollection<Household>('households'),
+      events: new PostgresCollection<StoredEvent>('events'),
+    };
+  } else if (process.env.VERCEL) {
+    // מערכת הקבצים של Vercel לקריאה בלבד, אז אחסון בקובץ ייכשל ב-EROFS
+    // ויפיק 500 בלי שום רמז מה לתקן. עדיף להיכשל בהודעה מנחה.
+    cached = {
+      households: new UnconfiguredCollection<Household>(),
+      events: new UnconfiguredCollection<StoredEvent>(),
+    };
+  } else {
+    cached = {
+      households: new FileCollection<Household>('households.json'),
+      events: new FileCollection<StoredEvent>('events.json'),
+    };
+  }
+
   return cached;
 }
