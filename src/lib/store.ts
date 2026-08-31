@@ -32,11 +32,21 @@ export interface Collection<T> {
    * מהוואטסאפ, וקריאה-שינוי-כתיבה רגילה הייתה מאבדת תשובות.
    */
   update(id: string, mutate: (value: T) => T): Promise<T | null>;
+  remove(id: string): Promise<void>;
+}
+
+/**
+ * אירועים דורשים גם שליפה לפי קבוצה, כדי להציג רשימת ארוחות.
+ * העדפתי שאילתה אמיתית על פני שמירת רשימה מסוכמת בתוך הקבוצה: רשימה
+ * כזו נוטה לסטות מהמציאות ברגע שמשהו באירוע משתנה.
+ */
+export interface EventCollection extends Collection<StoredEvent> {
+  listByHousehold(householdId: string): Promise<StoredEvent[]>;
 }
 
 export interface Store {
   households: Collection<Household>;
-  events: Collection<StoredEvent>;
+  events: EventCollection;
 }
 
 // ---------------------------------------------------------------- קובץ מקומי
@@ -57,6 +67,10 @@ class FileCollection<T> implements Collection<T> {
 
   private get path(): string {
     return path.join(DATA_DIR, this.file);
+  }
+
+  protected async all(): Promise<Record<string, T>> {
+    return this.readAll();
   }
 
   private async readAll(): Promise<Record<string, T>> {
@@ -97,6 +111,23 @@ class FileCollection<T> implements Collection<T> {
       await this.writeAll(all);
       return updated;
     });
+  }
+
+  remove(id: string): Promise<void> {
+    return serialize(async () => {
+      const all = await this.readAll();
+      delete all[id];
+      await this.writeAll(all);
+    });
+  }
+}
+
+class FileEventCollection extends FileCollection<StoredEvent> implements EventCollection {
+  async listByHousehold(householdId: string): Promise<StoredEvent[]> {
+    const all = await this.all();
+    return Object.values(all)
+      .filter((e) => e.householdId === householdId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 }
 
@@ -162,6 +193,12 @@ class PostgresCollection<T> implements Collection<T> {
       return updated;
     }) as Promise<T | null>;
   }
+
+  async remove(id: string): Promise<void> {
+    const sql = await connect();
+    const rows = sql(this.table);
+    await sql`DELETE FROM ${rows} WHERE id = ${id}`;
+  }
 }
 
 // ------------------------------------------------------- אחסון לא מוגדר
@@ -176,8 +213,35 @@ class UnconfiguredCollection<T> implements Collection<T> {
   async update(): Promise<never> {
     throw new StorageNotConfiguredError();
   }
+  async remove(): Promise<never> {
+    throw new StorageNotConfiguredError();
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private readonly _phantom?: T;
+}
+
+class PostgresEventCollection
+  extends PostgresCollection<StoredEvent>
+  implements EventCollection
+{
+  async listByHousehold(householdId: string): Promise<StoredEvent[]> {
+    const sql = await connect();
+    const rows = await sql<{ data: StoredEvent }[]>`
+      SELECT data FROM events
+      WHERE data->>'householdId' = ${householdId}
+      ORDER BY created_at DESC
+    `;
+    return rows.map((r) => r.data);
+  }
+}
+
+class UnconfiguredEventCollection
+  extends UnconfiguredCollection<StoredEvent>
+  implements EventCollection
+{
+  async listByHousehold(): Promise<never> {
+    throw new StorageNotConfiguredError();
+  }
 }
 
 let cached: Store | null = null;
@@ -188,19 +252,19 @@ export function getStore(): Store {
   if (process.env.DATABASE_URL) {
     cached = {
       households: new PostgresCollection<Household>('households'),
-      events: new PostgresCollection<StoredEvent>('events'),
+      events: new PostgresEventCollection('events'),
     };
   } else if (process.env.VERCEL) {
     // מערכת הקבצים של Vercel לקריאה בלבד, אז אחסון בקובץ ייכשל ב-EROFS
     // ויפיק 500 בלי שום רמז מה לתקן. עדיף להיכשל בהודעה מנחה.
     cached = {
       households: new UnconfiguredCollection<Household>(),
-      events: new UnconfiguredCollection<StoredEvent>(),
+      events: new UnconfiguredEventCollection(),
     };
   } else {
     cached = {
       households: new FileCollection<Household>('households.json'),
-      events: new FileCollection<StoredEvent>('events.json'),
+      events: new FileEventCollection('events.json'),
     };
   }
 

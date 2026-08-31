@@ -1,8 +1,15 @@
 'use client';
 
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import TagPicker from '@/components/TagPicker';
-import { DIETS, expandDown } from '@/core/taxonomy';
+import Tabs from '@/components/Tabs';
+import { DIETS, DIET_BY_ID, expandDown, tagName } from '@/core/taxonomy';
+import {
+  lastProfile,
+  membershipIn,
+  rememberMembership,
+  rememberProfile,
+} from '@/lib/deviceMemory';
 
 interface HouseholdView {
   id: string;
@@ -10,10 +17,16 @@ interface HouseholdView {
   members: { id: string; name: string }[];
 }
 
-/** מפתח ב-localStorage: מי אני בקבוצה הזו, כדי לאפשר עריכה חוזרת. */
-const idKey = (householdId: string) => `dp:person:${householdId}`;
-/** ההעדפות האחרונות שמילא — ממלאות מראש הצטרפות לקבוצה נוספת. */
-const PROFILE_KEY = 'dp:profile';
+interface MyEvent {
+  id: string;
+  title: string;
+  date?: string;
+  plannedDishes: number;
+  canEat: string[];
+  cannotEat: string[];
+}
+
+type TabId = 'me' | 'meals';
 
 interface Profile {
   name: string;
@@ -37,6 +50,9 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [restored, setRestored] = useState(false);
+  const [tab, setTab] = useState<TabId>('me');
+  const [editing, setEditing] = useState(false);
+  const [myEvents, setMyEvents] = useState<MyEvent[] | null>(null);
 
   useEffect(() => {
     fetch(`/api/households/${id}`)
@@ -49,17 +65,45 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
   }, [id]);
 
   useEffect(() => {
-    try {
-      setPersonId(localStorage.getItem(idKey(id)));
-      const stored = localStorage.getItem(PROFILE_KEY);
-      if (stored) {
-        setForm({ ...EMPTY, ...(JSON.parse(stored) as Partial<Profile>) });
-        setRestored(true);
-      }
-    } catch {
-      // localStorage חסום (גלישה פרטית וכו') — הטופס פשוט מתחיל ריק.
+    const known = membershipIn(id);
+    setPersonId(known?.personId ?? null);
+    // מי שכבר רשום לא אמור לראות טופס ריק — הוא רואה את מה שמילא.
+    setEditing(!known);
+    const stored = lastProfile<Partial<Profile>>();
+    if (stored && !known) {
+      setForm({ ...EMPTY, ...stored });
+      setRestored(true);
     }
   }, [id]);
+
+  /** הרשומה שלי מהשרת — מקור האמת, גם אם מילאתי ממכשיר אחר. */
+  const loadMine = useCallback(async () => {
+    if (!personId) return;
+    try {
+      const res = await fetch(`/api/households/${id}/mine`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ personId }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? 'שגיאה');
+      setMyEvents(body.events);
+      setForm({
+        name: body.me.name,
+        diets: body.me.diets,
+        blocked: body.me.blocked,
+        disliked: body.me.disliked,
+        loved: body.me.loved,
+        notes: body.me.notes ?? '',
+      });
+    } catch {
+      // אם הרשומה נעלמה (הוסרה מהקבוצה) — נחזור למצב הצטרפות.
+      setPersonId(null);
+      setEditing(true);
+    }
+  }, [id, personId]);
+
+  useEffect(() => { void loadMine(); }, [loadMine]);
 
   const blockedClosure = useMemo(() => expandDown(form.blocked), [form.blocked]);
   const dislikedClosure = useMemo(() => expandDown(form.disliked), [form.disliked]);
@@ -83,13 +127,14 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
       if (!res.ok) throw new Error(data.error ?? 'שגיאה בשמירה');
       if (data.personId) {
         setPersonId(data.personId);
-        try {
-          localStorage.setItem(idKey(id), data.personId);
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(form));
-        } catch {
-          // אין localStorage — נשמר בשרת בכל מקרה, רק בלי עריכה חוזרת נוחה.
-        }
+        rememberMembership({
+          householdId: id,
+          name: household?.name ?? '',
+          personId: data.personId,
+        });
+        rememberProfile(form);
       }
+      setEditing(false);
       setSaved(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -109,11 +154,31 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
   }
   if (!household) return <main><p className="muted">טוען…</p></main>;
 
+  const registered = personId !== null;
+
   return (
     <main>
-      <h1>{household.name}</h1>
+      <header className="app-bar">
+        <h1 style={{ margin: 0 }}>{household.name}</h1>
+        <a href="/">← הקבוצות שלי</a>
+      </header>
 
-      {saved && (
+      {registered && (
+        <Tabs<TabId>
+          active={tab}
+          onChange={setTab}
+          tabs={[
+            { id: 'me', label: 'ההעדפות שלי' },
+            { id: 'meals', label: 'הארוחות שלי', badge: myEvents?.length ?? 0 },
+          ]}
+        />
+      )}
+
+      {registered && tab === 'meals' && (
+        <MyMeals events={myEvents} name={form.name} />
+      )}
+
+      {saved && tab === 'me' && (
         <div className="alert good">
           <strong>נשמר, תודה!</strong>
           מכאן והלאה אתה מסודר — לא תצטרך למלא את זה שוב לפני כל ארוחה. אם משהו ישתנה,
@@ -127,6 +192,26 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
+      {tab === 'me' && !editing && registered && (
+        <>
+          <div className="card">
+            <div className="row" style={{ justifyContent: 'space-between' }}>
+              <div>
+                <strong style={{ fontSize: '1.05rem' }}>{form.name}</strong>
+                <div className="muted">אתה רשום בקבוצה ✓</div>
+              </div>
+              <button type="button" onClick={() => setEditing(true)}>ערוך</button>
+            </div>
+          </div>
+          <MyPreferences form={form} />
+          <p className="muted" style={{ fontSize: '0.85rem' }}>
+            ההעדפות שלך תקפות לכל ארוחה בקבוצה. אם משהו משתנה — לחץ ״ערוך״.
+          </p>
+        </>
+      )}
+
+      {tab === 'me' && editing && (
+      <>
       <p className="muted">
         מלא מה אתה <strong>לא יכול</strong> לאכול, מה אתה לא אוהב, ומה אתה אוהב במיוחד.
         לוקח דקה, <strong>ועושים את זה פעם אחת</strong> — לא לפני כל ארוחה.
@@ -241,17 +326,108 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
 
         {error && <div className="alert bad">{error}</div>}
 
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? 'שומר…' : personId ? 'עדכן את ההעדפות שלי' : 'הצטרף לקבוצה'}
-        </button>
+        <div className="row">
+          <button type="submit" className="primary" disabled={busy}>
+            {busy ? 'שומר…' : registered ? 'שמור שינויים' : 'הצטרף לקבוצה'}
+          </button>
+          {registered && (
+            <button type="button" className="ghost" onClick={() => { setEditing(false); void loadMine(); }}>
+              ביטול
+            </button>
+          )}
+        </div>
       </form>
+      </>
+      )}
 
-      {household.members.length > 0 && (
+      {tab === 'me' && !registered && household.members.length > 0 && (
         <>
           <h2>כבר בקבוצה ({household.members.length})</h2>
           <p className="muted">{household.members.map((p) => p.name).join(' · ')}</p>
         </>
       )}
     </main>
+  );
+}
+
+/** סיכום ההעדפות שלי, לקריאה. */
+function MyPreferences({ form }: { form: Profile }) {
+  const rows: [string, string][] = [];
+  if (form.diets.length) {
+    rows.push(['אורח חיים', form.diets.map((d) => DIET_BY_ID.get(d)?.he ?? d).join(' · ')]);
+  }
+  if (form.blocked.length) rows.push(['❌ אסור לי', form.blocked.map(tagName).join(', ')]);
+  if (form.disliked.length) rows.push(['😕 לא אוהב', form.disliked.map(tagName).join(', ')]);
+  if (form.loved.length) rows.push(['😍 אוהב', form.loved.map(tagName).join(', ')]);
+  if (form.notes) rows.push(['💬 הערה', form.notes]);
+
+  if (rows.length === 0) {
+    return (
+      <div className="empty">
+        לא סימנת שום הגבלה — כלומר אתה אוכל הכל.<br />
+        אם זה לא מדויק, לחץ ״ערוך״.
+      </div>
+    );
+  }
+
+  return (
+    <ul className="list card">
+      {rows.map(([label, value]) => (
+        <li key={label}>
+          <div className="muted" style={{ fontSize: '0.85rem' }}>{label}</div>
+          <div>{value}</div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** הארוחות שאני מוזמן אליהן, ומה אני יכול לקחת מהן. */
+function MyMeals({ events, name }: { events: MyEvent[] | null; name: string }) {
+  if (events === null) return <p className="muted">טוען…</p>;
+  if (events.length === 0) {
+    return (
+      <div className="empty">
+        אין ארוחות שאתה מוזמן אליהן כרגע.<br />
+        כשתיפתח ארוחה, היא תופיע כאן.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {events.map((e) => (
+        <div className="card" key={e.id}>
+          <h3 style={{ marginBottom: 2 }}>{e.title}</h3>
+          {e.date && (
+            <div className="muted">{new Date(e.date).toLocaleDateString('he-IL')}</div>
+          )}
+
+          {e.plannedDishes === 0 ? (
+            <p className="muted" style={{ marginTop: 8 }}>התפריט עוד לא תוכנן.</p>
+          ) : e.canEat.length === 0 ? (
+            <div className="alert bad" style={{ marginTop: 10 }}>
+              <strong>אין כאן משהו שמתאים לך.</strong>
+              שווה לומר מילה למי שמבשל.
+            </div>
+          ) : (
+            <>
+              <div className="alert good" style={{ marginTop: 10 }}>
+                <strong>{e.canEat.length} מנות מתאימות לך</strong>
+                {e.canEat.join(' · ')}
+              </div>
+              {e.cannotEat.length > 0 && (
+                <p className="muted" style={{ fontSize: '0.85rem' }}>
+                  לא בשבילך: {e.cannotEat.join(' · ')}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+      <p className="muted" style={{ fontSize: '0.85rem' }}>
+        מוצג לפי ההעדפות שמילא/ה {name}.
+      </p>
+    </>
   );
 }

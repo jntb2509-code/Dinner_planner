@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { loadEvent } from '@/lib/loadEvent';
-import { tokenMatches } from '@/lib/validate';
+import { canAccessEvent, loadEvent } from '@/lib/loadEvent';
+import { getStore } from '@/lib/store';
 import { errorResponse } from '@/lib/apiError';
 import { cookView } from '@/lib/cookView';
 
@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: Params) {
     if (!loaded) return NextResponse.json({ error: 'הארוחה לא נמצאה' }, { status: 404 });
 
     const token = new URL(request.url).searchParams.get('token');
-    if (!tokenMatches(loaded.stored.cookToken, token)) {
+    if (!canAccessEvent(loaded, token)) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
 
@@ -29,5 +29,21 @@ export async function GET(request: Request, { params }: Params) {
     });
   } catch (error) {
     return errorResponse(error, 'שגיאה בטעינת הארוחה');
+  }
+}
+
+/** מחיקת ארוחה. מותרת לבעל הקבוצה או למי שמחזיק בטוקן הארוחה. */
+export async function DELETE(request: Request, { params }: Params) {
+  const { id } = await params;
+  try {
+    const loaded = await loadEvent(id);
+    if (!loaded) return NextResponse.json({ error: 'הארוחה לא נמצאה' }, { status: 404 });
+    if (!canAccessEvent(loaded, new URL(request.url).searchParams.get('token'))) {
+      return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
+    }
+    await getStore().events.remove(id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return errorResponse(error, 'שגיאה במחיקת הארוחה');
   }
 }

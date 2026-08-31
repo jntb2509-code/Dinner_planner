@@ -7,6 +7,38 @@ import type { StoredEvent } from '@/lib/model';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * רשימת הארוחות של הקבוצה. בלי זה, ארוחה שנפתחה ואיבדו את הלינק שלה
+ * פשוט נעלמה — וזו הייתה הסיבה המרכזית להרגשה שהכל מפוזר.
+ */
+export async function GET(request: Request, { params }: Params) {
+  const { id } = await params;
+  try {
+    const store = getStore();
+    const household = await store.households.get(id);
+    if (!household) return NextResponse.json({ error: 'הקבוצה לא נמצאה' }, { status: 404 });
+    if (!tokenMatches(household.ownerToken, new URL(request.url).searchParams.get('token'))) {
+      return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
+    }
+
+    const events = await store.events.listByHousehold(id);
+    const names = new Map(household.people.map((p) => [p.id, p.name]));
+    return NextResponse.json({
+      events: events.map((e) => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        createdAt: e.createdAt,
+        cookToken: e.cookToken,
+        dishCount: e.dishes.length,
+        attendees: e.attendeeIds.map((pid) => names.get(pid)).filter(Boolean),
+      })),
+    });
+  } catch (error) {
+    return errorResponse(error, 'שגיאה בטעינת הארוחות');
+  }
+}
+
 type Params = { params: Promise<{ id: string }> };
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {

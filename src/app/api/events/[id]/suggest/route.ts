@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadEvent } from '@/lib/loadEvent';
-import { tokenMatches } from '@/lib/validate';
+import { canAccessEvent, loadEvent } from '@/lib/loadEvent';
 import { errorResponse } from '@/lib/apiError';
 import { suggestDishes } from '@/core/suggest';
 import { DISH_LIBRARY } from '@/core/library';
@@ -16,7 +15,7 @@ export async function GET(request: Request, { params }: Params) {
   try {
     const loaded = await loadEvent(id);
     if (!loaded) return NextResponse.json({ error: 'הארוחה לא נמצאה' }, { status: 404 });
-    if (!tokenMatches(loaded.stored.cookToken, url.searchParams.get('token'))) {
+    if (!canAccessEvent(loaded, url.searchParams.get('token'))) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
 

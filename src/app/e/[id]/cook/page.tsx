@@ -166,10 +166,15 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <main>
-      <h1>{event.title}</h1>
+      <header className="app-bar">
+        <h1 style={{ margin: 0 }}>{event.title}</h1>
+        <a href={`/h/${data.household.id}/manage?t=${encodeURIComponent(token)}`}>
+          ← {data.household.name}
+        </a>
+      </header>
       <p className="muted">
-        {data.household.name} · {event.participants.length} מגיעים · דורש{' '}
-        {event.minDishesPerPerson} מנות לכל אחד, מתוכן {event.minMainsPerPerson} עיקריות
+        {event.participants.length} מגיעים · דורש {event.minDishesPerPerson} מנות לכל אחד,
+        מתוכן {event.minMainsPerPerson} עיקריות
       </p>
 
       {error && <div className="alert bad">{error}</div>}

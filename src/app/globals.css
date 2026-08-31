@@ -183,3 +183,85 @@ details.card > summary::after {
 }
 details.card[open] > summary::after { transform: rotate(180deg); }
 details.card > summary + p { margin-top: 10px; }
+
+/* --- ניווט טאבים --- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 18px;
+  position: sticky;
+  top: 8px;
+  z-index: 10;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+.tab-btn {
+  flex: 1 1 auto;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.tab-btn[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.tab-btn:hover:not([aria-selected='true']) { color: var(--text); }
+.tab-badge {
+  background: var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.tab-btn[aria-selected='true'] .tab-badge { background: var(--accent); color: #fff; }
+
+/* --- כרטיס ניווט בלוח הבקרה --- */
+.nav-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.nav-card:hover { border-color: var(--accent); }
+.nav-card strong { display: block; font-size: 1.05rem; }
+
+.empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+header.app-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+header.app-bar a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+header.app-bar a:hover { color: var(--accent); }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
-import { loadEvent } from '@/lib/loadEvent';
-import { parseAttendeeIds, tokenMatches } from '@/lib/validate';
+import { canAccessEvent, loadEvent } from '@/lib/loadEvent';
+import { parseAttendeeIds } from '@/lib/validate';
 import { errorResponse } from '@/lib/apiError';
 import { cookView } from '@/lib/cookView';
 import { resolveEvent } from '@/lib/model';
@@ -17,7 +17,7 @@ export async function PUT(request: Request, { params }: Params) {
     const token = new URL(request.url).searchParams.get('token');
     const loaded = await loadEvent(id);
     if (!loaded) return NextResponse.json({ error: 'הארוחה לא נמצאה' }, { status: 404 });
-    if (!tokenMatches(loaded.stored.cookToken, token)) {
+    if (!canAccessEvent(loaded, token)) {
       return NextResponse.json({ error: 'אין הרשאה' }, { status: 403 });
     }
 
