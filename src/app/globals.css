@@ -205,13 +205,22 @@ table.matrix th.dish { text-align: right; position: sticky; inset-inline-start: 
 table.matrix thead th { background: var(--surface); position: sticky; top: 0; }
 table.matrix tbody tr:hover td { background: var(--bg); }
 .cell { display: inline-block; width: 22px; height: 22px; line-height: 22px; border-radius: 6px; font-size: 0.8rem; }
-.cell.blocked { background: var(--danger-soft); color: var(--danger); }
+.cell.blocked { background: var(--danger-soft); color: var(--danger); font-weight: 700; }
 .cell.uncertain { background: var(--warn-soft); color: var(--warn); }
-.cell.disliked { background: var(--warn-soft); color: var(--warn); opacity: 0.75; }
+.cell.disliked { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
 .cell.ok { color: var(--muted); }
 .cell.loved { background: var(--accent-soft); color: var(--accent); }
 
-.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
+.legend {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: var(--sp-3);
+  align-items: center;
+}
+.legend-item { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
 .pill {
   display: inline-block;

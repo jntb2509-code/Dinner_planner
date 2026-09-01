@@ -20,10 +20,23 @@ interface CookData {
 const STATUS_ICON: Record<DishVerdict['status'], string> = {
   blocked: '✕',
   uncertain: '?',
-  disliked: '~',
-  ok: '·',
+  disliked: '□',
+  ok: '✓',
   loved: '★',
 };
+
+/**
+ * המקרא נגזר מאותו מקור כמו תאי הטבלה ומשתמש באותן מחלקות, כדי שסימן
+ * או צבע שישתנו בעתיד ישתנו בשני המקומות. קודם הוא צויר בנפרד בטקסט
+ * אפור אחיד, ולכן ה-✕ במקרא לא היה אדום כמו בטבלה.
+ */
+const LEGEND: { status: DishVerdict['status']; label: string }[] = [
+  { status: 'loved', label: 'אוהב' },
+  { status: 'ok', label: 'בסדר' },
+  { status: 'disliked', label: 'לא אוהב' },
+  { status: 'uncertain', label: 'עלול להכיל' },
+  { status: 'blocked', label: 'לא יכול לאכול' },
+];
 
 const STATUS_LABEL: Record<DishVerdict['status'], string> = {
   blocked: 'לא יכול/ה לאכול',
@@ -378,11 +391,12 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
             </table>
           </div>
           <div className="legend">
-            <span>★ אוהב</span>
-            <span>· בסדר</span>
-            <span>~ לא אוהב</span>
-            <span>? עלול להכיל</span>
-            <span>✕ לא יכול לאכול</span>
+            {LEGEND.map(({ status, label }) => (
+              <span key={status} className="legend-item">
+                <span className={`cell ${status}`}>{STATUS_ICON[status]}</span>
+                {label}
+              </span>
+            ))}
             <span className="muted">(רחף מעל תא כדי לראות למה)</span>
           </div>
         </>
