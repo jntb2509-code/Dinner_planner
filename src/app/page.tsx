@@ -58,7 +58,7 @@ export default function HomePage() {
       <h1>מתכנן הארוחות המשפחתי</h1>
 
       {!hasAnything && (
-        <p className="muted" style={{ marginBottom: 22 }}>
+        <p className="muted mb-5">
           כל אחד ממלא פעם אחת מה הוא אוכל ומה לא. מכאן והלאה, כשאתה פותח ארוחה אתה רק מסמן
           מי מגיע — ומיד רואה מה אפשר לבשל ומי עלול להישאר בלי כלום.
         </p>
@@ -89,13 +89,13 @@ export default function HomePage() {
       )}
 
       {hasAnything && !creating && (
-        <button type="button" style={{ marginTop: 12 }} onClick={() => setCreating(true)}>
+        <button type="button" className="mt-3" onClick={() => setCreating(true)}>
           + קבוצה חדשה
         </button>
       )}
 
       {(!hasAnything || creating) && (
-        <form onSubmit={create} className="card" style={{ marginTop: hasAnything ? 12 : 0 }}>
+        <form onSubmit={create} className={hasAnything ? 'card mt-3' : 'card'}>
           <label htmlFor="name">איך נקרא לקבוצה?</label>
           <p className="muted">
             זו הקבוצה הקבועה שממנה ייבנו כל הארוחות. אפשר לפתוח כמה קבוצות נפרדות — למשל
@@ -109,8 +109,8 @@ export default function HomePage() {
             placeholder="למשל: משפחת כהן"
             required
           />
-          {error && <div className="alert bad" style={{ marginTop: 14 }}>{error}</div>}
-          <div className="row" style={{ marginTop: 18 }}>
+          {error && <div className="alert bad mt-4">{error}</div>}
+          <div className="row mt-4">
             <button type="submit" className="primary" disabled={busy}>
               {busy ? 'יוצר…' : 'צור קבוצה'}
             </button>
@@ -124,7 +124,7 @@ export default function HomePage() {
       )}
 
       {hasAnything && (
-        <p className="muted" style={{ marginTop: 24, fontSize: '0.85rem' }}>
+        <p className="muted mt-5 fine">
           הרשימה הזו נשמרת במכשיר הזה בלבד. אם תעבור מכשיר, תזדקק ללינק של הקבוצה —
           הוא נמצא בלשונית ״הזמנה״ בתוך כל קבוצה.
         </p>

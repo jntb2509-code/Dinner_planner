@@ -167,7 +167,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main>
       <header className="app-bar">
-        <h1 style={{ margin: 0 }}>{event.title}</h1>
+        <h1 className="no-margin">{event.title}</h1>
         <a href={`/h/${data.household.id}/manage?t=${encodeURIComponent(token)}`}>
           ← {data.household.name}
         </a>
@@ -193,7 +193,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
       ) : (
         <div className="alert bad">
           <strong>{coverage.uncovered.length} משתתפים בבעיה:</strong>
-          <ul style={{ margin: '6px 0 0', paddingInlineStart: 20 }}>
+          <ul className="alert-list">
             {coverage.uncovered.map((c) => (
               <li key={c.participantId}>
                 <strong>{c.name}</strong> — {c.problems.join('; ')}
@@ -230,17 +230,17 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
       <h2>התפריט</h2>
       {dishes.map((dish, index) => (
         <div className="card" key={dish.id}>
-          <div className="row" style={{ marginBottom: 10 }}>
+          <div className="row mb-3">
             <input
               type="text"
               value={dish.name}
               onChange={(e) => updateDish(index, { name: e.target.value })}
               placeholder="שם המנה"
-              style={{ flex: '1 1 200px' }}
+              className="dish-name"
               list="dish-library"
               aria-label="שם המנה"
             />
-            <label style={{ display: 'flex', gap: 6, alignItems: 'center', margin: 0, fontWeight: 500 }}>
+            <label className="check-label">
               <input
                 type="checkbox"
                 checked={dish.isMain}
@@ -261,7 +261,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
           </div>
 
           <details open={dish.tags.length === 0}>
-            <summary className="muted" style={{ cursor: 'pointer', marginBottom: 8 }}>
+            <summary className="disclosure">
               מרכיבים ({dish.tags.length}){' '}
               {dish.tags.length > 0 && `— ${dish.tags.map(tagName).join(', ')}`}
             </summary>
@@ -270,7 +270,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
               selected={dish.tags}
               onChange={(tags) => updateDish(index, { tags })}
             />
-            <div className="muted" style={{ margin: '10px 0 6px' }}>
+            <div className="muted mt-3 mb-3">
               עלול להכיל (לא בטוח שנמצא במנה):
             </div>
             <TagPicker
@@ -290,7 +290,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
         {DISH_LIBRARY.map((d) => <option key={d.id} value={d.name} />)}
       </datalist>
 
-      <div className="row" style={{ marginBottom: 20 }}>
+      <div className="row mb-5">
         <button type="button" onClick={() => addDish()}>+ הוסף מנה</button>
         <button
           type="button"
@@ -305,7 +305,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
 
       {/* ------------------------------ הצעות ------------------------------ */}
       <h2>הצעות</h2>
-      <div className="row" style={{ marginBottom: 12 }}>
+      <div className="row mb-3">
         <button type="button" onClick={() => void fetchSuggestions(false)} disabled={suggesting}>
           {suggesting ? 'מחשב…' : 'השלם לי את החורים'}
         </button>
@@ -319,10 +319,10 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
       )}
       {suggestions?.map((s) => (
         <div className="card" key={s.dish.id}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
+          <div className="row between">
             <div>
               <strong>{s.dish.name}</strong>
-              {s.dish.isMain && <span className="pill ok" style={{ marginInlineStart: 8 }}>עיקרית</span>}
+              {s.dish.isMain && <span className="pill ok">עיקרית</span>}
               <div className="muted">{s.reason}</div>
               <div className="muted">מרכיבים: {s.dish.tags.map(tagName).join(', ')}</div>
             </div>
@@ -398,9 +398,9 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
           const cov = coverage.perParticipant.find((c) => c.participantId === p.id);
           return (
             <li key={p.id}>
-              <div className="row" style={{ justifyContent: 'space-between' }}>
+              <div className="row between">
                 <strong>{p.name}</strong>
-                <span className="row" style={{ gap: 8 }}>
+                <span className="row tight">
                   {cov && (
                     <span className={`pill ${cov.ok ? 'ok' : 'bad'}`}>
                       {cov.safeDishIds.length} מנות · {cov.safeMainDishIds.length} עיקריות
@@ -421,7 +421,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
                 <div className="muted">{p.diets.map((d) => DIET_BY_ID.get(d)?.he ?? d).join(' · ')}</div>
               )}
               {p.blocked.length > 0 && (
-                <div style={{ color: 'var(--danger)', fontSize: '0.88rem' }}>
+                <div className="blocked-list">
                   ❌ {p.blocked.map(tagName).join(', ')}
                 </div>
               )}
@@ -431,7 +431,7 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
               {p.loved.length > 0 && (
                 <div className="muted">😍 {p.loved.map(tagName).join(', ')}</div>
               )}
-              {p.notes && <div style={{ fontSize: '0.9rem' }}>💬 {p.notes}</div>}
+              {p.notes && <div className="note-line">💬 {p.notes}</div>}
             </li>
           );
         })}
@@ -466,7 +466,7 @@ function DishImpact({
   if (!matrix[event.participants[0]?.id]?.[dish.id]) return null;
 
   return (
-    <div className="muted" style={{ marginTop: 8, fontSize: '0.85rem' }}>
+    <div className="fine mt-2">
       {summary.eats} מתוך {event.participants.length} יכולים לאכול
       {summary.blocked.length > 0 && ` · לא מתאים ל: ${summary.blocked.join(', ')}`}
     </div>

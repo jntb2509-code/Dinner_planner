@@ -109,7 +109,7 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
   return (
     <main>
       <header className="app-bar">
-        <h1 style={{ margin: 0 }}>{household.name}</h1>
+        <h1 className="no-margin">{household.name}</h1>
         <a href="/">← כל הקבוצות</a>
       </header>
       <p className="muted">{household.people.length} אנשים · {events.length} ארוחות</p>
@@ -146,7 +146,7 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
             <ul className="list">
               {household.people.map((p) => (
                 <li key={p.id}>
-                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <div className="row between">
                     <strong>{p.name}</strong>
                     <button
                       type="button"
@@ -163,7 +163,7 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
                     </div>
                   )}
                   {p.blocked.length > 0 && (
-                    <div style={{ color: 'var(--danger)', fontSize: '0.88rem' }}>
+                    <div className="blocked-list">
                       ❌ {p.blocked.map(tagName).join(', ')}
                     </div>
                   )}
@@ -171,7 +171,7 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
                     <div className="muted">😕 {p.disliked.map(tagName).join(', ')}</div>
                   )}
                   {p.loved.length > 0 && <div className="muted">😍 {p.loved.map(tagName).join(', ')}</div>}
-                  {p.notes && <div style={{ fontSize: '0.9rem' }}>💬 {p.notes}</div>}
+                  {p.notes && <div className="note-line">💬 {p.notes}</div>}
                 </li>
               ))}
             </ul>
@@ -193,7 +193,7 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
 
           <div className="card">
             <h3>הלינק הפרטי שלך</h3>
-            <div className="alert warn" style={{ marginBottom: 12 }}>
+            <div className="alert warn mb-3">
               <strong>אל תשתף אותו.</strong>
               הוא חושף את האלרגיות והמידע הרפואי של כל מי שבקבוצה.
             </div>
@@ -221,7 +221,7 @@ function WhatsAppBox({ link }: { link: string }) {
     'זה פעם אחת בלבד — לא צריך למלא שוב לפני כל ארוחה.';
 
   return (
-    <p style={{ marginTop: 12 }}>
+    <p className="mt-3">
       <a
         href={`https://wa.me/?text=${encodeURIComponent(message)}`}
         target="_blank"
@@ -294,10 +294,10 @@ function MealsTab({
         <>
           {events.map((e) => (
             <div className="nav-card" key={e.id}>
-              <div className="row" style={{ justifyContent: 'space-between' }}>
+              <div className="row between">
                 <a
                   href={`/e/${e.id}/cook?t=${encodeURIComponent(token)}`}
-                  style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}
+                  className="plain-link grow"
                 >
                   <strong>{e.title}</strong>
                   <span className="muted">
@@ -333,8 +333,8 @@ function MealsTab({
       )}
 
       {open && household.people.length > 0 && (
-        <form onSubmit={create} className="card" style={{ marginTop: 12 }}>
-          <div style={{ marginBottom: 14 }}>
+        <form onSubmit={create} className="card mt-3">
+          <div className="mb-4">
             <label htmlFor="title">שם הארוחה</label>
             <input
               id="title"
@@ -346,7 +346,7 @@ function MealsTab({
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div className="mb-4">
             <label htmlFor="date">תאריך (לא חובה)</label>
             <input id="date" type="date" value={date} onChange={(ev) => setDate(ev.target.value)} />
           </div>
@@ -356,7 +356,7 @@ function MealsTab({
             הכל מסומן כברירת מחדל. הורד את מי שלא בא — {attending.size} מתוך{' '}
             {household.people.length} מסומנים.
           </p>
-          <div className="tags" style={{ marginBottom: 16 }}>
+          <div className="tags mb-4">
             {household.people.map((p) => (
               <button
                 key={p.id}
@@ -378,7 +378,7 @@ function MealsTab({
           </div>
 
           <details>
-            <summary className="muted" style={{ cursor: 'pointer', marginBottom: 10 }}>
+            <summary className="disclosure">
               מה נחשב &quot;יש לו מה לאכול&quot;? (ברירת המחדל מתאימה לרוב הארוחות)
             </summary>
             <div className="grid2">
@@ -391,7 +391,7 @@ function MealsTab({
                   max={10}
                   value={minDishes}
                   onChange={(ev) => setMinDishes(Number(ev.target.value))}
-                  style={{ width: '100%', padding: '10px 12px', fontSize: 16 }}
+                  className="num-field"
                 />
               </div>
               <div>
@@ -403,15 +403,15 @@ function MealsTab({
                   max={5}
                   value={minMains}
                   onChange={(ev) => setMinMains(Number(ev.target.value))}
-                  style={{ width: '100%', padding: '10px 12px', fontSize: 16 }}
+                  className="num-field"
                 />
               </div>
             </div>
           </details>
 
-          {error && <div className="alert bad" style={{ marginTop: 12 }}>{error}</div>}
+          {error && <div className="alert bad mt-3">{error}</div>}
 
-          <div className="row" style={{ marginTop: 18 }}>
+          <div className="row mt-4">
             <button type="submit" className="primary" disabled={busy || attending.size === 0}>
               {busy ? 'פותח…' : 'פתח ארוחה'}
             </button>

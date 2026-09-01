@@ -64,13 +64,13 @@ export default function TagPicker({ variant, selected, onChange, disabled }: Pro
 
   return (
     <div>
-      <div className="row" style={{ marginBottom: 10 }}>
+      <div className="row mb-3">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="חיפוש מרכיב…"
-          style={{ flex: '1 1 180px' }}
+          className="search-field"
           aria-label="חיפוש מרכיב"
         />
         <button type="button" className="ghost small" onClick={() => setShowAll((v) => !v)}>
@@ -79,8 +79,8 @@ export default function TagPicker({ variant, selected, onChange, disabled }: Pro
       </div>
 
       {grouped.map(([kind, tags]) => (
-        <div key={kind} style={{ marginBottom: 12 }}>
-          <div className="muted" style={{ marginBottom: 5 }}>{GROUP_LABELS[kind]}</div>
+        <div key={kind} className="mb-3">
+          <div className="muted group-label">{GROUP_LABELS[kind]}</div>
           <div className="tags">
             {tags.map((tag) => {
               const isDisabled = disabled?.has(tag.id) ?? false;

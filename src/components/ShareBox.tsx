@@ -7,7 +7,7 @@ export default function ShareBox({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="share">
-      <span style={{ flex: 1 }}>{url}</span>
+      <span className="grow">{url}</span>
       <button
         type="button"
         className="small"

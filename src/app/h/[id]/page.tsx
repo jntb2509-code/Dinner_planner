@@ -159,7 +159,7 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
   return (
     <main>
       <header className="app-bar">
-        <h1 style={{ margin: 0 }}>{household.name}</h1>
+        <h1 className="no-margin">{household.name}</h1>
         <a href="/">← הקבוצות שלי</a>
       </header>
 
@@ -195,16 +195,16 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
       {tab === 'me' && !editing && registered && (
         <>
           <div className="card">
-            <div className="row" style={{ justifyContent: 'space-between' }}>
+            <div className="row between">
               <div>
-                <strong style={{ fontSize: '1.05rem' }}>{form.name}</strong>
+                <strong className="person-name">{form.name}</strong>
                 <div className="muted">אתה רשום בקבוצה ✓</div>
               </div>
               <button type="button" onClick={() => setEditing(true)}>ערוך</button>
             </div>
           </div>
           <MyPreferences form={form} />
-          <p className="muted" style={{ fontSize: '0.85rem' }}>
+          <p className="fine">
             ההעדפות שלך תקפות לכל ארוחה בקבוצה. אם משהו משתנה — לחץ ״ערוך״.
           </p>
         </>
@@ -281,7 +281,7 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
           <summary>
             <strong>😕 פשוט לא אוהב</strong>
             {form.disliked.length > 0 && (
-              <span className="pill" style={{ marginInlineStart: 8 }}>{form.disliked.length}</span>
+              <span className="pill">{form.disliked.length}</span>
             )}
           </summary>
           <p className="muted">אפשר לשים בשולחן, רק שלא תהיה זו המנה היחידה שלך.</p>
@@ -299,7 +299,7 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
           <summary>
             <strong>😍 אוהב במיוחד</strong>
             {form.loved.length > 0 && (
-              <span className="pill" style={{ marginInlineStart: 8 }}>{form.loved.length}</span>
+              <span className="pill">{form.loved.length}</span>
             )}
           </summary>
           <p className="muted">לא חובה, אבל עוזר לבחור בין שתי אפשרויות שקולות.</p>
@@ -374,7 +374,7 @@ function MyPreferences({ form }: { form: Profile }) {
     <ul className="list card">
       {rows.map(([label, value]) => (
         <li key={label}>
-          <div className="muted" style={{ fontSize: '0.85rem' }}>{label}</div>
+          <div className="fine">{label}</div>
           <div>{value}</div>
         </li>
       ))}
@@ -398,26 +398,26 @@ function MyMeals({ events, name }: { events: MyEvent[] | null; name: string }) {
     <>
       {events.map((e) => (
         <div className="card" key={e.id}>
-          <h3 style={{ marginBottom: 2 }}>{e.title}</h3>
+          <h3>{e.title}</h3>
           {e.date && (
             <div className="muted">{new Date(e.date).toLocaleDateString('he-IL')}</div>
           )}
 
           {e.plannedDishes === 0 ? (
-            <p className="muted" style={{ marginTop: 8 }}>התפריט עוד לא תוכנן.</p>
+            <p className="muted mt-2">התפריט עוד לא תוכנן.</p>
           ) : e.canEat.length === 0 ? (
-            <div className="alert bad" style={{ marginTop: 10 }}>
+            <div className="alert bad mt-3">
               <strong>אין כאן משהו שמתאים לך.</strong>
               שווה לומר מילה למי שמבשל.
             </div>
           ) : (
             <>
-              <div className="alert good" style={{ marginTop: 10 }}>
+              <div className="alert good mt-3">
                 <strong>{e.canEat.length} מנות מתאימות לך</strong>
                 {e.canEat.join(' · ')}
               </div>
               {e.cannotEat.length > 0 && (
-                <p className="muted" style={{ fontSize: '0.85rem' }}>
+                <p className="fine">
                   לא בשבילך: {e.cannotEat.join(' · ')}
                 </p>
               )}
@@ -425,7 +425,7 @@ function MyMeals({ events, name }: { events: MyEvent[] | null; name: string }) {
           )}
         </div>
       ))}
-      <p className="muted" style={{ fontSize: '0.85rem' }}>
+      <p className="fine">
         מוצג לפי ההעדפות שמילא/ה {name}.
       </p>
     </>
