@@ -160,6 +160,9 @@ export default function JoinHouseholdPage({ params }: { params: Promise<{ id: st
     <main>
       <header className="app-bar">
         <h1 className="no-margin">{household.name}</h1>
+        <a className="brand" href="/">
+          <img src="/logo-mark.svg" alt="" width={40} height={40} />
+        </a>
         <a href="/">← הקבוצות שלי</a>
       </header>
 

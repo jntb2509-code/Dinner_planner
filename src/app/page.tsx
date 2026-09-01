@@ -55,7 +55,12 @@ export default function HomePage() {
 
   return (
     <main>
-      <h1>מתכנן הארוחות המשפחתי</h1>
+      {/* הסימן המלא מוצג רק בעמוד הכניסה. בשאר המסכים הוא היה גוזל
+          גובה מסך יקר בלי להוסיף מידע. */}
+      <div className="hero">
+        <img src="/logo-full.svg" alt="DinnerPlans" width={148} height={186} />
+      </div>
+      <h1 className="visually-hidden">מתכנן הארוחות המשפחתי</h1>
 
       {!hasAnything && (
         <p className="muted mb-5">

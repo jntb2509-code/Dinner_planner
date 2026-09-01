@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="DinnerPlans">
+  <!-- טבעת היושבים סביב השולחן: ראשים כהים על קודקודי המשושה,
+       וראשים ירוקים ביניהם — כמו בסימן המקורי. -->
+  <g fill="#8fb894">
+    <circle cx="100" cy="14" r="12"/>
+    <circle cx="174" cy="57" r="12"/>
+    <circle cx="174" cy="143" r="12"/>
+    <circle cx="100" cy="186" r="12"/>
+    <circle cx="26" cy="143" r="12"/>
+    <circle cx="26" cy="57" r="12"/>
+  </g>
+  <g fill="#8fb894" opacity="0.85">
+    <circle cx="63" cy="28" r="10"/>
+    <circle cx="137" cy="28" r="10"/>
+    <circle cx="185" cy="100" r="10"/>
+    <circle cx="137" cy="172" r="10"/>
+    <circle cx="63" cy="172" r="10"/>
+    <circle cx="15" cy="100" r="10"/>
+  </g>
+  <g fill="#1f6072">
+    <circle cx="100" cy="30" r="13"/>
+    <circle cx="161" cy="65" r="13"/>
+    <circle cx="161" cy="135" r="13"/>
+    <circle cx="100" cy="170" r="13"/>
+    <circle cx="39" cy="135" r="13"/>
+    <circle cx="39" cy="65" r="13"/>
+  </g>
+  <!-- כתפי היושבים, כטבעת משושה מעוגלת -->
+  <path d="M100 48 L152 78 L152 122 L100 152 L48 122 L48 78 Z"
+        fill="none" stroke="#1f6072" stroke-width="17" stroke-linejoin="round"/>
+
+  <!-- המשושה המרכזי -->
+  <path d="M100 50 L150 79 L150 121 L100 150 L50 121 L50 79 Z"
+        fill="#ffffff" stroke="#1f6072" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- אדים -->
+  <g fill="none" stroke="#1f6072" stroke-width="3" stroke-linecap="round">
+    <path d="M87 80 q5 -6 0 -12"/>
+    <path d="M100 78 q5 -7 0 -14"/>
+    <path d="M113 80 q5 -6 0 -12"/>
+  </g>
+
+  <!-- הסיר -->
+  <circle cx="100" cy="90" r="4" fill="#c8663c"/>
+  <rect x="72" y="94" width="56" height="8" rx="4" fill="#c8663c"/>
+  <path d="M74 103 h52 l-5 24 a9 9 0 0 1 -9 7 h-24 a9 9 0 0 1 -9 -7 Z" fill="#c8663c"/>
+  <g fill="none" stroke="#1f6072" stroke-width="3" stroke-linecap="round">
+    <path d="M70 107 a6 6 0 0 0 0 11"/>
+    <path d="M130 107 a6 6 0 0 1 0 11"/>
+  </g>
+
+  <!-- עלים -->
+  <g fill="#8fb894">
+    <path d="M99 145 q-14 -2 -16 -12 q13 -1 16 12 Z"/>
+    <path d="M101 145 q14 -2 16 -12 q-13 -1 -16 12 Z"/>
+  </g>
+</svg>

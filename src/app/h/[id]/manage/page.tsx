@@ -110,6 +110,9 @@ function ManagePage({ params }: { params: Promise<{ id: string }> }) {
     <main>
       <header className="app-bar">
         <h1 className="no-margin">{household.name}</h1>
+        <a className="brand" href="/">
+          <img src="/logo-mark.svg" alt="" width={40} height={40} />
+        </a>
         <a href="/">← כל הקבוצות</a>
       </header>
       <p className="muted">{household.people.length} אנשים · {events.length} ארוחות</p>
