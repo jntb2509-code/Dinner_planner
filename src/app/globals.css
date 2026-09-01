@@ -200,11 +200,34 @@ button.small { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
 /* --- מטריצת הכיסוי --- */
 .matrix-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 table.matrix { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
-table.matrix th, table.matrix td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: center; white-space: nowrap; }
+table.matrix th, table.matrix td { border-bottom: 1px solid var(--border); padding: var(--sp-1) var(--sp-2); text-align: center; white-space: nowrap; }
+/* התא כולו הוא שטח הלחיצה, כדי שלא יהיה צורך לפגוע בדיוק בסמליל */
+table.matrix td { padding: 2px; }
+table.matrix td .cell { width: 100%; min-width: 34px; height: 30px; border-radius: var(--radius-sm); }
 table.matrix th.dish { text-align: right; position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 1; min-width: 160px; }
 table.matrix thead th { background: var(--surface); position: sticky; top: 0; }
 table.matrix tbody tr:hover td { background: var(--bg); }
-.cell { display: inline-block; width: 22px; height: 22px; line-height: 22px; border-radius: 6px; font-size: 0.8rem; }
+/* מרכוז ב-flex ולא ב-line-height: לסמלילים (✓ ★ □ ? ✕) יש מטריקות
+   אנכיות שונות לגמרי, ו-line-height מיישר אותם כל אחד בגובה אחר. */
+.cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: box-shadow 0.12s, transform 0.05s;
+}
+.cell:hover { transform: none; }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cell.active { box-shadow: 0 0 0 2px var(--accent); }
 .cell.blocked { background: var(--danger-soft); color: var(--danger); font-weight: 700; }
 .cell.uncertain { background: var(--warn-soft); color: var(--warn); }
 .cell.disliked { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
@@ -221,6 +244,28 @@ table.matrix tbody tr:hover td { background: var(--bg); }
   align-items: center;
 }
 .legend-item { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.legend-item .cell { cursor: default; }
+
+/* --- פאנל ההסבר מתחת למטריצה --- */
+.cell-explain {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 62px;
+}
+.cell-explain strong { display: flex; align-items: center; gap: var(--sp-2); }
+.cell-explain.blocked { border-color: var(--danger); background: var(--danger-soft); }
+.cell-explain.uncertain, .cell-explain.disliked { border-color: var(--warn); background: var(--warn-soft); }
+.cell-explain.loved { border-color: var(--accent); background: var(--accent-soft); }
+.empty-explain {
+  border-style: dashed;
+  background: var(--surface-sunk);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .pill {
   display: inline-block;

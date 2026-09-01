@@ -46,6 +46,44 @@ const STATUS_LABEL: Record<DishVerdict['status'], string> = {
   loved: 'אוהב/ת במיוחד',
 };
 
+interface CellDetail {
+  person: string;
+  dish: string;
+  verdict: DishVerdict;
+  reasons: string[];
+}
+
+/**
+ * ההסבר לתא שנבחן.
+ *
+ * לא tooltip: המטריצה נמצאת בתוך מיכל עם גלילה אופקית, וכל שכבה צפה
+ * בתוכו הייתה נחתכת בקצוות. פאנל קבוע גם עובד זהה במגע ובמקלדת, בעוד
+ * ש-title נטיב לא מופיע כלל בנגיעה.
+ */
+function CellExplanation({ detail }: { detail: CellDetail | null }) {
+  if (!detail) {
+    return (
+      <p className="fine cell-explain empty-explain">
+        בחר תא בטבלה כדי לראות מה בדיוק חוסם או מפריע.
+      </p>
+    );
+  }
+  return (
+    <div className={`cell-explain ${detail.verdict.status}`}>
+      <strong>
+        <span className={`cell ${detail.verdict.status}`}>
+          {STATUS_ICON[detail.verdict.status]}
+        </span>{' '}
+        {detail.person} · {detail.dish}
+      </strong>
+      <div>{STATUS_LABEL[detail.verdict.status]}</div>
+      {detail.reasons.length > 0 && (
+        <div className="fine">{detail.reasons.join(' · ')}</div>
+      )}
+    </div>
+  );
+}
+
 export default function CookPageWrapper({ params }: { params: Promise<{ id: string }> }) {
   return (
     <Suspense fallback={<main><p className="muted">טוען…</p></main>}>
@@ -68,6 +106,9 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
   >(null);
   const [suggesting, setSuggesting] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  /** התא שהמשתמש בוחן כרגע. מוצג בפאנל קבוע ולא כ-tooltip צף, כי
+      המטריצה יושבת בתוך אזור עם גלילה אופקית — כל דבר צף בתוכה נחתך. */
+  const [inspected, setInspected] = useState<CellDetail | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -368,20 +409,34 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
                     {event.participants.map((p) => {
                       const verdict = matrix[p.id]?.[dish.id];
                       if (!verdict) return <td key={p.id} />;
-                      const why = [
-                        ...verdict.blockedBy.map((t) => `חסום: ${t}`),
-                        ...verdict.uncertainBy.map((t) => `עלול להכיל: ${t}`),
-                        ...verdict.dislikedBy.map((t) => `לא אוהב: ${t}`),
-                        ...verdict.lovedBy.map((t) => `אוהב: ${t}`),
-                      ];
+                      const detail: CellDetail = {
+                        person: p.name,
+                        dish: dish.name,
+                        verdict,
+                        reasons: [
+                          ...verdict.blockedBy.map((t) => `חסום: ${t}`),
+                          ...verdict.uncertainBy.map((t) => `עלול להכיל: ${t}`),
+                          ...verdict.dislikedBy.map((t) => `לא אוהב: ${t}`),
+                          ...verdict.lovedBy.map((t) => `אוהב: ${t}`),
+                        ],
+                      };
+                      const active =
+                        inspected?.person === p.name && inspected?.dish === dish.name;
                       return (
                         <td key={p.id}>
-                          <span
-                            className={`cell ${verdict.status}`}
-                            title={`${p.name} — ${STATUS_LABEL[verdict.status]}${why.length ? `\n${why.join('\n')}` : ''}`}
+                          {/* כפתור ולא span: כך אפשר להגיע אליו גם במקלדת וגם
+                              בנגיעה, והוא ממלא את שטח התא כך שאין צורך לפגוע
+                              בדיוק בסמליל. */}
+                          <button
+                            type="button"
+                            className={`cell ${verdict.status}${active ? ' active' : ''}`}
+                            aria-label={`${p.name} — ${dish.name} — ${STATUS_LABEL[verdict.status]}`}
+                            onMouseEnter={() => setInspected(detail)}
+                            onFocus={() => setInspected(detail)}
+                            onClick={() => setInspected(detail)}
                           >
                             {STATUS_ICON[verdict.status]}
-                          </span>
+                          </button>
                         </td>
                       );
                     })}
@@ -397,8 +452,10 @@ function CookPage({ params }: { params: Promise<{ id: string }> }) {
                 {label}
               </span>
             ))}
-            <span className="muted">(רחף מעל תא כדי לראות למה)</span>
+            <span className="muted">(לחץ או רחף מעל תא כדי לראות למה)</span>
           </div>
+
+          <CellExplanation detail={inspected} />
         </>
       )}
 
