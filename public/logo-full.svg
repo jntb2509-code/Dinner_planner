@@ -1,63 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 268" role="img" aria-label="DinnerPlans">
-  <g transform="translate(30 0)">
-  <!-- טבעת היושבים סביב השולחן: ראשים כהים על קודקודי המשושה,
-       וראשים ירוקים ביניהם — כמו בסימן המקורי. -->
-  <g fill="#8fb894">
-    <circle cx="100" cy="14" r="12"/>
-    <circle cx="174" cy="57" r="12"/>
-    <circle cx="174" cy="143" r="12"/>
-    <circle cx="100" cy="186" r="12"/>
-    <circle cx="26" cy="143" r="12"/>
-    <circle cx="26" cy="57" r="12"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="138 96 524 606" role="img" aria-label="DinnerPlans">
+  <defs>
+    <style>
+      .bg { fill: #FDFCF9; }
+      .teal { fill: #1B6570; }
+      .teal-stroke { stroke: #1B6570; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .sage { fill: #8DA987; }
+      .terracotta { fill: #C86C45; }
+      .white { fill: #FFFFFF; }
+    </style>
+  </defs>
+  <g id="logo-mark" transform="translate(0, -20)">
+    <g transform="rotate(30 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(90 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(150 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(210 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(270 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(330 400 370)"><circle cx="400" cy="175" r="23" class="sage" /><path d="M 360 230 C 370 195, 430 195, 440 230 Z" class="sage" /></g>
+    <g transform="rotate(0 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <g transform="rotate(60 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <g transform="rotate(120 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <g transform="rotate(180 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <g transform="rotate(240 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <g transform="rotate(300 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
+    <polygon points="538.6,290 538.6,450 400,530 261.4,450 261.4,290 400,210" class="white" stroke="#1B6570" stroke-width="15" stroke-linejoin="round"/>
+    <path d="M 315 370 C 300 370, 300 395, 315 395" class="teal-stroke" stroke-width="9" />
+    <path d="M 485 370 C 500 370, 500 395, 485 395" class="teal-stroke" stroke-width="9" />
+    <path d="M 328 360 L 472 360 L 465 425 C 460 445, 440 455, 400 455 C 360 455, 340 445, 335 425 Z" class="terracotta" />
+    <path d="M 342 372 C 344 395, 345 420, 355 435 C 352 435, 341 425, 338 372 Z" fill="#FFFFFF" opacity="0.35"/>
+    <rect x="322" y="348" width="156" height="12" rx="6" class="terracotta" />
+    <path d="M 335 350 C 352 324, 448 324, 465 350 Z" class="terracotta" />
+    <circle cx="400" cy="320" r="8" class="terracotta" />
+    <path d="M 378 308 C 370 292, 385 278, 376 262" class="teal-stroke" stroke-width="5" />
+    <path d="M 400 305 C 392 288, 408 274, 400 258" class="teal-stroke" stroke-width="6" />
+    <path d="M 422 308 C 414 292, 429 278, 420 262" class="teal-stroke" stroke-width="5" />
+    <path d="M 400 460 C 380 455, 350 468, 342 490 C 365 500, 392 480, 400 460 Z" class="sage" />
+    <path d="M 400 460 C 420 455, 450 468, 458 490 C 435 500, 408 480, 400 460 Z" class="sage" />
   </g>
-  <g fill="#8fb894" opacity="0.85">
-    <circle cx="63" cy="28" r="10"/>
-    <circle cx="137" cy="28" r="10"/>
-    <circle cx="185" cy="100" r="10"/>
-    <circle cx="137" cy="172" r="10"/>
-    <circle cx="63" cy="172" r="10"/>
-    <circle cx="15" cy="100" r="10"/>
+  <g id="brand-text" fill="#1B6570" transform="translate(142, 690)">
+    <path d="M 0,-40 L 18,-40 C 30,-40, 38,-32, 38,-20 C 38,-8, 30,0, 18,0 L 0,0 Z M 8,-33 L 8,-7 L 17,-7 C 24,-7, 29,-12, 29,-20 C 29,-28, 24,-33, 17,-33 Z"/>
+    <path d="M 50,-40 L 58,-40 L 58,0 L 50,0 Z"/>
+    <path d="M 70,-40 L 78,-40 L 98,-12 L 98,-40 L 106,-40 L 106,0 L 98,0 L 78,-28 L 78,0 L 70,0 Z"/>
+    <path d="M 118,-40 L 126,-40 L 146,-12 L 146,-40 L 154,-40 L 154,0 L 146,0 L 126,-28 L 126,0 L 118,0 Z"/>
+    <path d="M 166,-40 L 198,-40 L 198,-33 L 174,-33 L 174,-24 L 194,-24 L 194,-17 L 174,-17 L 174,-7 L 198,-7 L 198,0 L 166,0 Z"/>
+    <path d="M 210,-40 L 230,-40 C 240,-40, 247,-34, 247,-25 C 247,-18, 242,-13, 234,-11 L 249,0 L 239,0 L 226,-10 L 218,-10 L 218,0 L 210,0 Z M 218,-33 L 218,-17 L 229,-17 C 235,-17, 239,-20, 239,-25 C 239,-30, 235,-33, 229,-33 Z"/>
+    <path d="M 264,-40 L 284,-40 C 295,-40, 302,-33, 302,-22 C 302,-11, 295,-4, 284,-4 L 272,-4 L 272,0 L 264,0 Z M 272,-33 L 272,-11 L 283,-11 C 290,-11, 294,-15, 294,-22 C 294,-29, 290,-33, 283,-33 Z"/>
+    <path d="M 314,-40 L 322,-40 L 322,-7 L 344,-7 L 344,0 L 314,0 Z"/>
+    <path d="M 372,-40 L 382,-40 L 398,0 L 389,0 L 385,-11 L 369,-11 L 365,0 L 356,0 Z M 372,-18 L 382,-18 L 377,-31 Z"/>
+    <path d="M 410,-40 L 418,-40 L 438,-12 L 438,-40 L 446,-40 L 446,0 L 438,0 L 418,-28 L 418,0 L 410,0 Z"/>
+    <path d="M 458,-10 C 460,-4, 467,0, 477,0 C 488,0, 495,-6, 495,-14 C 495,-22, 488,-25, 477,-27 C 468,-29, 464,-31, 464,-35 C 464,-39, 469,-42, 476,-42 C 484,-42, 489,-38, 490,-33 L 498,-34 C 496,-41, 488,-48, 476,-48 C 464,-48, 456,-42, 456,-34 C 456,-26, 463,-23, 474,-21 C 483,-19, 487,-17, 487,-13 C 487,-9, 483,-7, 477,-7 C 470,-7, 465,-10, 465,-15 Z"/>
   </g>
-  <g fill="#1f6072">
-    <circle cx="100" cy="30" r="13"/>
-    <circle cx="161" cy="65" r="13"/>
-    <circle cx="161" cy="135" r="13"/>
-    <circle cx="100" cy="170" r="13"/>
-    <circle cx="39" cy="135" r="13"/>
-    <circle cx="39" cy="65" r="13"/>
-  </g>
-  <!-- כתפי היושבים, כטבעת משושה מעוגלת -->
-  <path d="M100 48 L152 78 L152 122 L100 152 L48 122 L48 78 Z"
-        fill="none" stroke="#1f6072" stroke-width="17" stroke-linejoin="round"/>
-
-  <!-- המשושה המרכזי -->
-  <path d="M100 50 L150 79 L150 121 L100 150 L50 121 L50 79 Z"
-        fill="#ffffff" stroke="#1f6072" stroke-width="4" stroke-linejoin="round"/>
-
-  <!-- אדים -->
-  <g fill="none" stroke="#1f6072" stroke-width="3" stroke-linecap="round">
-    <path d="M87 80 q5 -6 0 -12"/>
-    <path d="M100 78 q5 -7 0 -14"/>
-    <path d="M113 80 q5 -6 0 -12"/>
-  </g>
-
-  <!-- הסיר -->
-  <circle cx="100" cy="90" r="4" fill="#c8663c"/>
-  <rect x="72" y="94" width="56" height="8" rx="4" fill="#c8663c"/>
-  <path d="M74 103 h52 l-5 24 a9 9 0 0 1 -9 7 h-24 a9 9 0 0 1 -9 -7 Z" fill="#c8663c"/>
-  <g fill="none" stroke="#1f6072" stroke-width="3" stroke-linecap="round">
-    <path d="M70 107 a6 6 0 0 0 0 11"/>
-    <path d="M130 107 a6 6 0 0 1 0 11"/>
-  </g>
-
-  <!-- עלים -->
-  <g fill="#8fb894">
-    <path d="M99 145 q-14 -2 -16 -12 q13 -1 16 12 Z"/>
-    <path d="M101 145 q14 -2 16 -12 q-13 -1 -16 12 Z"/>
-  </g>
-  </g>
-  <text x="130" y="252" text-anchor="middle" fill="#1f6072"
-        direction="ltr" style="direction:ltr;unicode-bidi:isolate"
-        font-family="Rubik, Assistant, Arial, system-ui, sans-serif"
-        font-size="34" font-weight="600" letter-spacing="1">DINNERPLANS</text>
 </svg>

@@ -16,14 +16,15 @@
 
   /* טורקיז הלוגו. הירוק־זית הקודם היה #3f7d5c — החלפה כאן מיישרת
      את כל האתר: כפתורים, טאבים, ה-★ וההתראות. */
-  --accent: #1f6072;
+  --accent: #1B6570;
   --accent-soft: #e4eef1;
-  --accent-strong: #164a58;
+  --accent-strong: #144d56;
   /* הירוק של העלים בלוגו, לשימוש משני */
-  --leaf: #8fb894;
+  --leaf: #8DA987;
 
-  --danger: #b34a2a;
-  --danger-soft: #fbebe4;
+  /* הטרקוטה של הסיר בלוגו, כהה מעט לקריאות על רקע בהיר */
+  --danger: #b0552f;
+  --danger-soft: #fbeade;
   --warn: #9a6414;
   --warn-soft: #fbf1e0;
 
