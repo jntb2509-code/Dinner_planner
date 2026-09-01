@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { buildCoverage, evaluateDish, mixesMeatAndDairy, resolveConstraints } from './matching';
-import { descendantsOf, expandDown, expandUp } from './taxonomy';
+import {
+  DIETS,
+  TAGS,
+  TAG_BY_ID,
+  ancestorsOf,
+  descendantsOf,
+  expandDown,
+  expandUp,
+} from './taxonomy';
 import { suggestDishes } from './suggest';
 import { DISH_LIBRARY } from './library';
 import type { Dish, MealEvent, Participant } from './types';
@@ -251,5 +259,123 @@ describe('תרחיש משפחתי מלא', () => {
     const merged = { ...e, dishes: suggestions.map((s) => s.dish) };
     const report = buildCoverage(merged);
     expect(report.uncovered.map((u) => u.name)).toEqual([]);
+  });
+});
+
+describe('הרחבת הטקסונומיה', () => {
+  it('כל תגית מצביעה על אב שקיים', () => {
+    for (const tag of TAGS) {
+      if (tag.parent) expect(TAG_BY_ID.has(tag.parent), `${tag.id} -> ${tag.parent}`).toBe(true);
+    }
+  });
+
+  it('אין מזהים כפולים', () => {
+    expect(new Set(TAGS.map((t) => t.id)).size).toBe(TAGS.length);
+  });
+
+  it('אין מעגלים בהיררכיה', () => {
+    for (const tag of TAGS) {
+      const chain = ancestorsOf(tag.id);
+      expect(new Set(chain).size, `מעגל ב-${tag.id}`).toBe(chain.length);
+    }
+  });
+
+  it('כל תגית שדיאטה חוסמת קיימת בטקסונומיה', () => {
+    for (const diet of DIETS) {
+      for (const tag of diet.blocks) {
+        expect(TAG_BY_ID.has(tag), `${diet.id} חוסם ${tag} שאינו קיים`).toBe(true);
+      }
+    }
+  });
+
+  it('כל מרכיב במאגר המנות קיים בטקסונומיה', () => {
+    for (const d of DISH_LIBRARY) {
+      for (const tag of [...d.tags, ...(d.mayContain ?? [])]) {
+        expect(TAG_BY_ID.has(tag), `${d.name} מתויג ${tag} שאינו קיים`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('אלרגנים ורגישויות שנוספו', () => {
+  it('סלרי וחרדל נחסמים ומופיעים בהסבר', () => {
+    for (const [tag, name] of [['celery', 'סלרי'], ['mustard', 'חרדל']] as const) {
+      const p = person('אלרגי', { blocked: [tag] });
+      const v = evaluateDish(dish('d', [tag, 'rice']), resolveConstraints(p));
+      expect(v.status).toBe('blocked');
+      expect(v.blockedBy).toContain(name);
+    }
+  });
+
+  it('חסימת סלרי חוסמת גם שורש סלרי', () => {
+    const p = person('אלרגי', { blocked: ['celery'] });
+    expect(evaluateDish(dish('d', ['celeriac']), resolveConstraints(p)).status).toBe('blocked');
+  });
+
+  it('פאביזם חוסם פול בלבד, לא את כל הקטניות', () => {
+    const c = resolveConstraints(person('דני', { diets: ['favism'] }));
+    expect(c.blocked.has('fava')).toBe(true);
+    expect(c.blocked.has('chickpea')).toBe(false);
+    expect(c.blocked.has('lentil')).toBe(false);
+  });
+
+  it('כוסמת אינה גלוטן, כוסמין כן', () => {
+    const p = person('צליאק', { diets: ['gluten-free'] });
+    const c = resolveConstraints(p);
+    expect(c.blocked.has('buckwheat')).toBe(false);
+    expect(c.blocked.has('spelt')).toBe(true);
+    expect(c.blocked.has('freekeh')).toBe(true);
+    // שיבולת שועל משויכת לגלוטן בכוונה, מטעמי בטיחות
+    expect(c.blocked.has('oats')).toBe(true);
+  });
+
+  it('רגישות לחלב פרה מתירה גבינת עזים', () => {
+    const c = resolveConstraints(person('נועם', { blocked: ['cow-dairy'] }));
+    expect(evaluateDish(dish('a', ['hard-cheese']), c).status).toBe('blocked');
+    expect(evaluateDish(dish('b', ['goat-cheese']), c).status).toBe('ok');
+  });
+
+  it('חסימת חלב כללית חוסמת גם עזים וגם כבשים', () => {
+    const c = resolveConstraints(person('שיר', { diets: ['vegan'] }));
+    for (const t of ['goat-cheese', 'feta', 'hard-cheese', 'sheep-yogurt']) {
+      expect(c.blocked.has(t), t).toBe(true);
+    }
+  });
+
+  it('אלרגיה לאגוזים חוסמת גם משקה שקדים', () => {
+    const c = resolveConstraints(person('דוד', { blocked: ['nuts'] }));
+    expect(evaluateDish(dish('d', ['almond-milk']), c).status).toBe('blocked');
+  });
+
+  it('אלרגיה לשומשום חוסמת טחינה ושמן שומשום', () => {
+    const c = resolveConstraints(person('מאיה', { blocked: ['sesame'] }));
+    expect(evaluateDish(dish('a', ['tahini']), c).status).toBe('blocked');
+    expect(evaluateDish(dish('b', ['sesame-oil']), c).status).toBe('blocked');
+  });
+
+  it('אלרגיה לסרטנים אינה חוסמת רכיכות', () => {
+    const c = resolveConstraints(person('רון', { blocked: ['crustacean'] }));
+    expect(evaluateDish(dish('a', ['shrimp']), c).status).toBe('blocked');
+    expect(evaluateDish(dish('b', ['calamari']), c).status).toBe('ok');
+  });
+
+  it('כשרות חוסמת גם סרטנים וגם רכיכות', () => {
+    const c = resolveConstraints(person('סבתא', { diets: ['kosher'] }));
+    for (const t of ['shrimp', 'calamari', 'mussels', 'octopus']) {
+      expect(c.blocked.has(t), t).toBe(true);
+    }
+  });
+
+  it('סלידה מכוסברה אינה חוסמת זרעי כוסברה', () => {
+    const c = resolveConstraints(person('נועה', { disliked: ['cilantro'] }));
+    expect(evaluateDish(dish('a', ['cilantro']), c).status).toBe('disliked');
+    expect(evaluateDish(dish('b', ['coriander-seed']), c).status).toBe('ok');
+  });
+
+  it('חסימת עשבי תיבול חוסמת את כולם', () => {
+    const c = resolveConstraints(person('איתי', { blocked: ['herbs'] }));
+    for (const t of ['dill', 'mint', 'basil', 'zaatar', 'cilantro']) {
+      expect(c.blocked.has(t), t).toBe(true);
+    }
   });
 });

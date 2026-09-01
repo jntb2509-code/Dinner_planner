@@ -13,6 +13,8 @@ export type TagKind =
   | 'dairy'
   | 'grain'
   | 'vegetable'
+  | 'herb'
+  | 'spice'
   | 'fruit'
   | 'nut'
   | 'other';

@@ -8,13 +8,25 @@ const GROUP_LABELS: Record<TagKind, string> = {
   protein: 'בשר, דגים, ביצים וקטניות',
   dairy: 'חלב ומוצריו',
   grain: 'דגנים ופחמימות',
-  vegetable: 'ירקות',
-  fruit: 'פירות',
   nut: 'אגוזים וזרעים',
+  vegetable: 'ירקות',
+  herb: 'עשבי תיבול',
+  spice: 'תבלינים',
+  fruit: 'פירות',
   other: 'אחר',
 };
 
-const GROUP_ORDER: TagKind[] = ['protein', 'dairy', 'grain', 'nut', 'vegetable', 'fruit', 'other'];
+const GROUP_ORDER: TagKind[] = [
+  'protein',
+  'dairy',
+  'grain',
+  'nut',
+  'vegetable',
+  'herb',
+  'spice',
+  'fruit',
+  'other',
+];
 
 export type PickerVariant = 'block' | 'dislike' | 'love';
 
