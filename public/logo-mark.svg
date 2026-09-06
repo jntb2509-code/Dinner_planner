@@ -1,12 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="146 96 508 508" role="img" aria-label="DinnerPlans">
   <defs>
     <style>
-      .bg { fill: #FDFCF9; }
       .teal { fill: #1B6570; }
       .teal-stroke { stroke: #1B6570; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .hex { fill: #FFFFFF; stroke: #1B6570; }
       .sage { fill: #8DA987; }
       .terracotta { fill: #C86C45; }
-      .white { fill: #FFFFFF; }
+      .wordmark { fill: #1B6570; }
+      .wordmark-stroke { stroke: #1B6570; fill: none; }
+      /* הטורקיז המקורי מגיע ליחס ניגודיות 2.6 בלבד מול רקע כהה, ואז
+         טבעת היושבים כמעט נעלמת. גרסה בהירה יותר מכפילה את הניגודיות
+         בלי לשנות את הגוון. */
+      @media (prefers-color-scheme: dark) {
+        .teal { fill: #4E96A6; }
+        .teal-stroke { stroke: #4E96A6; }
+        .hex { fill: #F7F4EE; stroke: #4E96A6; }
+        .sage { fill: #9CBE96; }
+        .wordmark { fill: #4E96A6; }
+        .wordmark-stroke { stroke: #4E96A6; }
+      }
     </style>
   </defs>
   <g id="logo-mark" transform="translate(0, -20)">
@@ -22,7 +34,7 @@
     <g transform="rotate(180 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
     <g transform="rotate(240 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
     <g transform="rotate(300 400 370)"><circle cx="400" cy="150" r="26" class="teal" /><path d="M 345 228 C 360 180, 440 180, 455 228 L 435 235 C 425 200, 375 200, 365 235 Z" class="teal" /></g>
-    <polygon points="538.6,290 538.6,450 400,530 261.4,450 261.4,290 400,210" class="white" stroke="#1B6570" stroke-width="15" stroke-linejoin="round"/>
+    <polygon points="538.6,290 538.6,450 400,530 261.4,450 261.4,290 400,210" class="hex" stroke-width="15" stroke-linejoin="round"/>
     <path d="M 315 370 C 300 370, 300 395, 315 395" class="teal-stroke" stroke-width="9" />
     <path d="M 485 370 C 500 370, 500 395, 485 395" class="teal-stroke" stroke-width="9" />
     <path d="M 328 360 L 472 360 L 465 425 C 460 445, 440 455, 400 455 C 360 455, 340 445, 335 425 Z" class="terracotta" />
